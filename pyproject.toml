@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quantinsight"
+version = "0.1.0"
+description = "Agentic Research & Context Engineering Framework"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic>=2.0",
+    "llama-parse",
+    "langgraph",
+    "chromadb",
+    "sqlmodel",
+    "streamlit",
+    "mcp"
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "pytest",
+    "pyright"
+]
+eval = [
+    "ragas"
+]
