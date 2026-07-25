@@ -8,10 +8,10 @@
 
 ## Current Status
 
-- **Day:** Day 1
+- **Day:** Day 2
 - **Phase:** Phase 1 — Data Contracts & Ingestion Core
-- **Last completed task:** Task 3 — Create .env.example and repo scaffolding
-- **Next task up:** Task 4 — Implement SourcePaper and PaperChunk schemas
+- **Last completed task:** Task 4 — Implement SourcePaper and PaperChunk schemas
+- **Next task up:** Task 5 — Implement TableUnit and EquationUnit schemas
 - **Blockers / open questions:** None
 
 ---
@@ -26,6 +26,7 @@
 | 2026-07-25 | 2 | fb68ab4 | ci: setup pre-commit config and github actions ci | Added .pre-commit-config.yaml, .github/workflows/ci.yml, and dummy test |
 | 2026-07-25 | 3 | 78df107 | chore: create .env.example and repo scaffolding | Added .env.example and created module stubs based on structure.md |
 | 2026-07-25 | 1/3 | 3d61ca1 | chore: pivot to Groq-only LLM + local embeddings [retroactive task-1/3 fix] | Retroactive architecture shift to Groq and sentence-transformers |
+| 2026-07-25 | 4 | (pending) | feat(schemas): implement SourcePaper and PaperChunk data models [task-4] | Added ChunkType, SourcePaper, and PaperChunk models to schemas/models.py |
 
 ---
 
