@@ -9,9 +9,9 @@
 ## Current Status
 
 - **Day:** Day 1
-- **Phase:** Phase 0 — Project Setup
-- **Last completed task:** Task 2 — Set up pre-commit config and GitHub Actions CI
-- **Next task up:** Task 3 — Create .env.example and repo scaffolding
+- **Phase:** Phase 1 — Data Contracts & Ingestion Core
+- **Last completed task:** Task 3 — Create .env.example and repo scaffolding
+- **Next task up:** Task 4 — Implement SourcePaper and PaperChunk schemas
 - **Blockers / open questions:** None
 
 ---
@@ -23,7 +23,8 @@
 | Date | Task # | Commit hash (short) | Commit message | Notes |
 |---|---|---|---|---|
 | 2026-07-25 | 1 | a7e2929 | chore: initialize repo, uv venv, and pyproject.toml | Initialized project scaffolding, uv.lock, and .gitignore |
-| 2026-07-25 | 2 | (pending) | ci: setup pre-commit config and github actions ci | Added .pre-commit-config.yaml, .github/workflows/ci.yml, and dummy test |
+| 2026-07-25 | 2 | fb68ab4 | ci: setup pre-commit config and github actions ci | Added .pre-commit-config.yaml, .github/workflows/ci.yml, and dummy test |
+| 2026-07-25 | 3 | (pending) | chore: create .env.example and repo scaffolding | Added .env.example and created module stubs based on structure.md |
 
 ---
 
