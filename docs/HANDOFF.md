@@ -26,7 +26,7 @@
 | 2026-07-25 | 2 | fb68ab4 | ci: setup pre-commit config and github actions ci | Added .pre-commit-config.yaml, .github/workflows/ci.yml, and dummy test |
 | 2026-07-25 | 3 | 78df107 | chore: create .env.example and repo scaffolding | Added .env.example and created module stubs based on structure.md |
 | 2026-07-25 | 1/3 | 3d61ca1 | chore: pivot to Groq-only LLM + local embeddings [retroactive task-1/3 fix] | Retroactive architecture shift to Groq and sentence-transformers |
-| 2026-07-25 | 4 | (pending) | feat(schemas): implement SourcePaper and PaperChunk data models [task-4] | Added ChunkType, SourcePaper, and PaperChunk models to schemas/models.py |
+| 2026-07-25 | 4 | 790a6af | feat(schemas): implement SourcePaper and PaperChunk data models [task-4] | Added ChunkType, SourcePaper, and PaperChunk models to schemas/models.py |
 
 ---
 
