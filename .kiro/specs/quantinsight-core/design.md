@@ -198,7 +198,7 @@ START → Planner → Retriever → Synthesizer(draft) → Verifier
 ## Storage Design (`quantinsight/storage/`)
 
 ### ChromaDB
-Three collections — one per chunk type — so type-aware retrieval is a native collection choice, not a metadata filter:
+Three collections — one per chunk type — so type-aware retrieval is a native collection choice, not a metadata filter. Embeddings are generated locally using the `BAAI/bge-small-en-v1.5` model via `sentence-transformers`:
 
 | Collection | Contents |
 |---|---|
@@ -307,4 +307,5 @@ On re-ingest of the same `arxiv_id`: look up existing `SourcePaper` by `arxiv_id
 | Retry logic | Decorator-based retry (max 2) on all LlamaParse, LLM, and ChromaDB calls; raises structured exception on exhaustion |
 | Trace persistence | `AgentTraceStep` list written to SQLite alongside the LangGraph checkpoint — survives process restart |
 | Secret management | `.env` (gitignored); `.env.example` documents all required keys; no key hardcoded anywhere |
+| LLM & Embeddings | Groq-only API (`GROQ_API_KEY`) for all LLM inference; Local `sentence-transformers` (`BAAI/bge-small-en-v1.5`) for embedding generation |
 | CI | GitHub Actions: `ruff check`, `pyright`/`mypy`, `pytest` — must pass on every push to `main` |

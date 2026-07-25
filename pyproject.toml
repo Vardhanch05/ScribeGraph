@@ -17,7 +17,9 @@ dependencies = [
     "chromadb",
     "sqlmodel",
     "streamlit",
-    "mcp"
+    "mcp",
+    "sentence-transformers",
+    "groq"
 ]
 
 [project.optional-dependencies]

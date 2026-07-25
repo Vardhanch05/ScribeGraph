@@ -24,7 +24,8 @@
 |---|---|---|---|---|
 | 2026-07-25 | 1 | a7e2929 | chore: initialize repo, uv venv, and pyproject.toml | Initialized project scaffolding, uv.lock, and .gitignore |
 | 2026-07-25 | 2 | fb68ab4 | ci: setup pre-commit config and github actions ci | Added .pre-commit-config.yaml, .github/workflows/ci.yml, and dummy test |
-| 2026-07-25 | 3 | (pending) | chore: create .env.example and repo scaffolding | Added .env.example and created module stubs based on structure.md |
+| 2026-07-25 | 3 | 78df107 | chore: create .env.example and repo scaffolding | Added .env.example and created module stubs based on structure.md |
+| 2026-07-25 | 1/3 | (pending) | chore: pivot to Groq-only LLM + local embeddings [retroactive task-1/3 fix] | Retroactive architecture shift to Groq and sentence-transformers |
 
 ---
 
@@ -34,7 +35,7 @@
 
 | Date | Decision | Why | Affects |
 |---|---|---|---|
-| | | | |
+| 2026-07-25 | Pivoted from OpenAI to Groq-only LLM (`GROQ_API_KEY`) + local `sentence-transformers` (`BAAI/bge-small-en-v1.5`) | Avoid API embedding costs and leverage Groq's high speed for LLM reasoning | Tasks 12, 16, 18, 26, 28, 29, 59 |
 
 *Example entry:*
 | 2026-08-02 | Switched equation extraction confidence threshold from 0.8 to 0.6 | LlamaParse under-flagged valid equations at 0.8, causing false low-confidence markers | Task 11 (`ingestion/segmenter.py`) |
