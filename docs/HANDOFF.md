@@ -10,8 +10,8 @@
 
 - **Day:** Day 1
 - **Phase:** Phase 0 — Project Setup
-- **Last completed task:** Task 1 — Initialize repo, `uv venv`, and `pyproject.toml`
-- **Next task up:** Task 2 — Set up pre-commit config and GitHub Actions CI
+- **Last completed task:** Task 2 — Set up pre-commit config and GitHub Actions CI
+- **Next task up:** Task 3 — Create .env.example and repo scaffolding
 - **Blockers / open questions:** None
 
 ---
@@ -22,7 +22,8 @@
 
 | Date | Task # | Commit hash (short) | Commit message | Notes |
 |---|---|---|---|---|
-| 2026-07-25 | 1 | (pending) | chore: initialize repo, uv venv, and pyproject.toml | Initialized project scaffolding, uv.lock, and .gitignore |
+| 2026-07-25 | 1 | a7e2929 | chore: initialize repo, uv venv, and pyproject.toml | Initialized project scaffolding, uv.lock, and .gitignore |
+| 2026-07-25 | 2 | (pending) | ci: setup pre-commit config and github actions ci | Added .pre-commit-config.yaml, .github/workflows/ci.yml, and dummy test |
 
 ---
 
