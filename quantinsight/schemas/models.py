@@ -63,3 +63,38 @@ class EquationUnit(BaseModel):
     surrounding_context: str
     equation_label: str | None = None
     page_number: int
+
+
+class Citation(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    paper_id: UUID
+    cited_text: str
+    cited_work_raw: str
+    resolved_arxiv_id: str | None = None
+
+
+class CitedSummary(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    paper_id: UUID
+    summary: str
+    key_claims: list[str]
+    supporting_chunk_ids: list[UUID]
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    model_used: str
+
+
+class AgentTraceStep(BaseModel):
+    step_index: int
+    node_name: str
+    input_summary: str
+    output_summary: str
+    tool_calls: list[dict] = Field(default_factory=list)
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class QueryResponse(BaseModel):
+    answer: str
+    citations: list[UUID]
+    trace: list[AgentTraceStep]
+    self_correction_applied: bool
+    confidence_note: str | None = None
