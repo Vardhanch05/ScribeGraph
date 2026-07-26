@@ -10,8 +10,8 @@
 
 - **Day:** Day 2
 - **Phase:** Phase 1 — Data Contracts & Ingestion Core
-- **Last completed task:** Task 4 — Implement SourcePaper and PaperChunk schemas
-- **Next task up:** Task 5 — Implement TableUnit and EquationUnit schemas
+- **Last completed task:** Task 5 — Implement TableUnit and EquationUnit schemas
+- **Next task up:** Task 6 — Implement Citation, CitedSummary, AgentTraceStep, and QueryResponse schemas
 - **Blockers / open questions:** None
 
 ---
@@ -27,6 +27,7 @@
 | 2026-07-25 | 3 | 78df107 | chore: create .env.example and repo scaffolding | Added .env.example and created module stubs based on structure.md |
 | 2026-07-25 | 1/3 | 3d61ca1 | chore: pivot to Groq-only LLM + local embeddings [retroactive task-1/3 fix] | Retroactive architecture shift to Groq and sentence-transformers |
 | 2026-07-25 | 4 | 790a6af | feat(schemas): implement SourcePaper and PaperChunk data models [task-4] | Added ChunkType, SourcePaper, and PaperChunk models to schemas/models.py |
+| 2026-07-26 | 5 | (pending) | feat(schemas): implement TableUnit and EquationUnit data models [task-5] | Added TableUnit with row-length validation and EquationUnit models |
 
 ---
 

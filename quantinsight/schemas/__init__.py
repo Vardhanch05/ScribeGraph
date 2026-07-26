@@ -1,3 +1,9 @@
-from .models import ChunkType, PaperChunk, SourcePaper
+from .models import ChunkType, EquationUnit, PaperChunk, SourcePaper, TableUnit
 
-__all__ = ["ChunkType", "PaperChunk", "SourcePaper"]
+__all__ = [
+    "ChunkType",
+    "EquationUnit",
+    "PaperChunk",
+    "SourcePaper",
+    "TableUnit",
+]

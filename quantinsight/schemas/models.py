@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ChunkType(str, Enum):
@@ -34,3 +34,32 @@ class PaperChunk(BaseModel):
     section_title: str | None = None
     order_index: int
     embedding_id: str | None = None  # pointer into ChromaDB
+
+
+class TableUnit(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    paper_id: UUID
+    chunk_id: UUID
+    caption: str | None = None
+    headers: list[str]
+    rows: list[list[str]]
+    page_number: int
+
+    @model_validator(mode="after")
+    def validate_row_lengths(self) -> TableUnit:
+        for row in self.rows:
+            if len(row) != len(self.headers):
+                raise ValueError(
+                    "All rows in a TableUnit must match the length of the headers."
+                )
+        return self
+
+
+class EquationUnit(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    paper_id: UUID
+    chunk_id: UUID
+    latex: str
+    surrounding_context: str
+    equation_label: str | None = None
+    page_number: int
