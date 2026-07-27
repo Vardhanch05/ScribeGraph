@@ -58,3 +58,21 @@ async def test_parse_pdf_arxiv_id_success(mock_llama_parse, mock_fetch_arxiv):
     mock_fetch_arxiv.assert_called_once_with("1706.03762")
     mock_llama_parse.assert_called_once_with(api_key="fake_key", result_type="markdown")
     mock_parser_instance.aload_data.assert_called_once()
+
+@pytest.mark.anyio
+@patch("quantinsight.ingestion.parser.asyncio.sleep")
+@patch("quantinsight.ingestion.parser.LlamaParse")
+async def test_parse_pdf_rate_limiter(mock_llama_parse, mock_sleep):
+    # Setup mocks
+    mock_parser_instance = MagicMock()
+    mock_parser_instance.aload_data = AsyncMock(return_value=[
+        MagicMock(text="Content")
+    ])
+    mock_llama_parse.return_value = mock_parser_instance
+    
+    # Call parse_pdf
+    await parse_pdf(pdf_bytes=b"fake pdf", api_key="fake_key")
+    
+    # Verify sleep was called to rate limit
+    mock_sleep.assert_called_once_with(3.0)
+

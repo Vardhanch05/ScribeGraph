@@ -1,6 +1,7 @@
 import os
 import tempfile
 import logging
+import asyncio
 from typing import Optional
 from uuid import UUID, uuid4
 import httpx
@@ -12,6 +13,9 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+# Global semaphore to limit LlamaParse concurrency (free-tier cap: 20 req/min)
+_parse_semaphore: Optional[asyncio.Semaphore] = None
 
 
 class ParsingError(Exception):
@@ -116,10 +120,22 @@ async def parse_pdf(
             api_key=llama_key,
             result_type="markdown",
         )
-        markdown_content = await _call_llamaparse(parser, tmp_path)
+        
+        # Resolve semaphore in active event loop
+        global _parse_semaphore
+        if _parse_semaphore is None:
+            _parse_semaphore = asyncio.Semaphore(20)
+            
+        async with _parse_semaphore:
+            logger.info("Acquired LlamaParse semaphore slot. Calling API...")
+            markdown_content = await _call_llamaparse(parser, tmp_path)
+            # Short sleep to prevent hitting rate limits during sequential calls
+            await asyncio.sleep(3.0)
+            
         return markdown_content
     finally:
         try:
             os.unlink(tmp_path)
         except OSError:
             pass
+
