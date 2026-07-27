@@ -1,7 +1,18 @@
 import os
 import pytest
+import json
+import time
+from uuid import UUID, uuid4
 from unittest.mock import AsyncMock, patch, MagicMock
 from quantinsight.ingestion.parser import parse_pdf, fetch_arxiv_pdf, ParsingError
+
+@pytest.fixture(autouse=True)
+def mock_parser_artifacts(tmp_path):
+    test_artifacts_dir = str(tmp_path / "artifacts")
+    test_cache_file = os.path.join(test_artifacts_dir, "cache.json")
+    with patch("quantinsight.ingestion.parser.ARTIFACTS_DIR", test_artifacts_dir), \
+         patch("quantinsight.ingestion.parser.CACHE_FILE", test_cache_file):
+        yield
 
 @pytest.mark.anyio
 async def test_parse_pdf_argument_validation():
@@ -75,4 +86,93 @@ async def test_parse_pdf_rate_limiter(mock_llama_parse, mock_sleep):
     
     # Verify sleep was called to rate limit
     mock_sleep.assert_called_once_with(3.0)
+
+@pytest.mark.anyio
+@patch("quantinsight.ingestion.parser.LlamaParse")
+async def test_parse_pdf_artifact_persistence_and_caching(mock_llama_parse):
+    # Setup mock parser response
+    mock_parser_instance = MagicMock()
+    mock_parser_instance.aload_data = AsyncMock(return_value=[
+        MagicMock(text="Freshly parsed text")
+    ])
+    mock_llama_parse.return_value = mock_parser_instance
+    
+    paper_id = uuid4()
+    
+    # Import ARTIFACTS_DIR dynamically to check file path
+    from quantinsight.ingestion.parser import ARTIFACTS_DIR
+    
+    # 1. First parse: Cache miss
+    result = await parse_pdf(pdf_bytes=b"pdf content", paper_id=paper_id, api_key="fake")
+    assert result == "Freshly parsed text"
+    mock_parser_instance.aload_data.assert_called_once()
+    
+    # Check that file was written
+    expected_path = os.path.join(ARTIFACTS_DIR, str(paper_id), "raw.md")
+    assert os.path.exists(expected_path)
+    with open(expected_path, "r", encoding="utf-8") as f:
+        assert f.read() == "Freshly parsed text"
+        
+    # 2. Second parse with same paper_id: Cache hit (aload_data should NOT be called again)
+    mock_parser_instance.aload_data.reset_mock()
+    result2 = await parse_pdf(pdf_bytes=b"pdf content", paper_id=paper_id, api_key="fake")
+    assert result2 == "Freshly parsed text"
+    mock_parser_instance.aload_data.assert_not_called()
+
+@pytest.mark.anyio
+@patch("quantinsight.ingestion.parser.fetch_arxiv_pdf")
+@patch("quantinsight.ingestion.parser.LlamaParse")
+async def test_parse_pdf_arxiv_caching_and_expiration(mock_llama_parse, mock_fetch_arxiv):
+    mock_fetch_arxiv.return_value = b"downloaded pdf content"
+    
+    # Import ARTIFACTS_DIR and CACHE_FILE dynamically
+    from quantinsight.ingestion.parser import ARTIFACTS_DIR, CACHE_FILE
+    
+    mock_parser_instance = MagicMock()
+    mock_parser_instance.aload_data = AsyncMock(return_value=[
+        MagicMock(text="Arxiv cached text")
+    ])
+    mock_llama_parse.return_value = mock_parser_instance
+    
+    # Parse by arxiv_id first
+    arxiv_id = "2303.12345"
+    result = await parse_pdf(arxiv_id=arxiv_id, api_key="fake")
+    assert result == "Arxiv cached text"
+    mock_parser_instance.aload_data.assert_called_once()
+    mock_fetch_arxiv.assert_called_once_with(arxiv_id)
+    
+    # Second parse should hit the cache
+    mock_parser_instance.aload_data.reset_mock()
+    mock_fetch_arxiv.reset_mock()
+    result2 = await parse_pdf(arxiv_id=arxiv_id, api_key="fake")
+    assert result2 == "Arxiv cached text"
+    mock_parser_instance.aload_data.assert_not_called()
+    mock_fetch_arxiv.assert_not_called()
+    
+    # Force cache expiration by modifying modification time to 50 hours ago
+    with open(CACHE_FILE, "r") as f:
+        cache_data = json.load(f)
+    cached_paper_id = cache_data[f"arxiv_{arxiv_id}"]["paper_id"]
+    
+    cached_file_path = os.path.join(ARTIFACTS_DIR, cached_paper_id, "raw.md")
+    past_time = time.time() - (50 * 3600)
+    os.utime(cached_file_path, (past_time, past_time))
+    
+    # Also update the cache.json timestamp to 50 hours ago
+    cache_data[f"arxiv_{arxiv_id}"]["timestamp"] = past_time
+    with open(CACHE_FILE, "w") as f:
+        json.dump(cache_data, f)
+        
+    # Third parse: should be cache expiration, calling aload_data again
+    mock_parser_instance.aload_data.reset_mock()
+    mock_fetch_arxiv.reset_mock()
+    mock_parser_instance.aload_data.return_value = [MagicMock(text="New text post expiration")]
+    
+    result3 = await parse_pdf(arxiv_id=arxiv_id, api_key="fake")
+    assert result3 == "New text post expiration"
+    mock_parser_instance.aload_data.assert_called_once()
+    mock_fetch_arxiv.assert_called_once_with(arxiv_id)
+
+
+
 
