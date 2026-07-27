@@ -10,8 +10,8 @@
 
 - **Day:** Day 3
 - **Phase:** Phase 1 — Data Contracts & Ingestion Core
-- **Last completed task:** Task 11 — Implement low-confidence extraction flagging in segmenter
-- **Next task up:** Task 12 — Implement CitedSummary generation
+- **Last completed task:** Task 15 — Implement scripts/ingest.py CLI
+- **Next task up:** Task 16 — Phase 2 Retrieval (ChromaDB collection setup and retrieval methods)
 - **Blockers / open questions:** None
 
 ---
@@ -33,6 +33,9 @@
 | 2026-07-27 | 8 | ef6ef64 | feat(ingestion): add rate limiter to LlamaParse calls [task-8] | Wrapped LlamaParse API requests in an asyncio.Semaphore(20) with 3.0s sleep |
 | 2026-07-27 | 9 | 8e42242 | feat(ingestion): implement artifact persistence and 48h cache avoidance [task-9] | Added workspace-relative raw Markdown persistence and a JSON cache.json lookup map |
 | 2026-07-27 | 10/11 | 248a7dc | feat(ingestion): implement segmenter and low-confidence warnings [task-10] [task-11] | Implemented document segmentation to chunks, tables, equations, and flagging mismatched tables |
+| 2026-07-27 | 12 | 73ed5e9 | feat(ingestion): implement CitedSummary generation using Groq [task-12] | Added CitedSummary generation with tenancy retries and citation reference checking |
+| 2026-07-27 | 13/14 | 462eb39 | feat(ingestion): implement idempotent re-ingestion and storage foundation [task-13] [task-14] | Set up SQLModel storage layer with Cascade on delete and ChromaDB local vector store |
+| 2026-07-27 | 15 | d804f68 | feat(ingestion): complete ingestion CLI, clean up lints, and ensure timezone awareness [task-15] | Implemented scripts/ingest.py CLI with status reporting and ruff compliance |
 
 ---
 
