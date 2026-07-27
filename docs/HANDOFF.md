@@ -8,10 +8,10 @@
 
 ## Current Status
 
-- **Day:** Day 2
+- **Day:** Day 3
 - **Phase:** Phase 1 — Data Contracts & Ingestion Core
-- **Last completed task:** Task 6 — Implement Citation, CitedSummary, AgentTraceStep, and QueryResponse schemas
-- **Next task up:** Task 7 — Implement LlamaParse client wrapper (ingestion/parser.py)
+- **Last completed task:** Task 11 — Implement low-confidence extraction flagging in segmenter
+- **Next task up:** Task 12 — Implement CitedSummary generation
 - **Blockers / open questions:** None
 
 ---
@@ -29,6 +29,10 @@
 | 2026-07-25 | 4 | 790a6af | feat(schemas): implement SourcePaper and PaperChunk data models [task-4] | Added ChunkType, SourcePaper, and PaperChunk models to schemas/models.py |
 | 2026-07-26 | 5 | 95f75f3 | feat(schemas): implement TableUnit and EquationUnit data models [task-5] | Added TableUnit with row-length validation and EquationUnit models |
 | 2026-07-26 | 6 | 3683943 | feat(schemas): implement Citation, CitedSummary, AgentTraceStep, and QueryResponse data models [task-6] | Added Citation, CitedSummary, AgentTraceStep, and QueryResponse schemas |
+| 2026-07-27 | 7 | c5f98ae | feat(ingestion): implement LlamaParse client wrapper [task-7] | Implemented async fetch and parse wrapper for arXiv IDs/PDF bytes with Tenacity retries |
+| 2026-07-27 | 8 | ef6ef64 | feat(ingestion): add rate limiter to LlamaParse calls [task-8] | Wrapped LlamaParse API requests in an asyncio.Semaphore(20) with 3.0s sleep |
+| 2026-07-27 | 9 | 8e42242 | feat(ingestion): implement artifact persistence and 48h cache avoidance [task-9] | Added workspace-relative raw Markdown persistence and a JSON cache.json lookup map |
+| 2026-07-27 | 10/11 | 248a7dc | feat(ingestion): implement segmenter and low-confidence warnings [task-10] [task-11] | Implemented document segmentation to chunks, tables, equations, and flagging mismatched tables |
 
 ---
 
