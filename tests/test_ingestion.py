@@ -1,10 +1,13 @@
-import os
-import pytest
 import json
+import os
 import time
-from uuid import UUID, uuid4
-from unittest.mock import AsyncMock, patch, MagicMock
-from quantinsight.ingestion.parser import parse_pdf, fetch_arxiv_pdf, ParsingError
+from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
+
+import pytest
+
+from quantinsight.ingestion.parser import parse_pdf
+
 
 @pytest.fixture(autouse=True)
 def mock_parser_artifacts(tmp_path):

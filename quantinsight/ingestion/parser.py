@@ -1,15 +1,20 @@
-import os
-import tempfile
-import logging
 import asyncio
 import json
+import logging
+import os
+import tempfile
 import time
-from typing import Optional
 from uuid import UUID, uuid4
+
 import httpx
 from dotenv import load_dotenv
 from llama_parse import LlamaParse
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 # Load environment variables
 load_dotenv()
@@ -17,7 +22,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # Global semaphore to limit LlamaParse concurrency (free-tier cap: 20 req/min)
-_parse_semaphore: Optional[asyncio.Semaphore] = None
+_parse_semaphore: asyncio.Semaphore | None = None
 
 WORKSPACE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 ARTIFACTS_DIR = os.path.join(WORKSPACE_ROOT, "artifacts")
@@ -45,7 +50,6 @@ def _save_cache(cache: dict) -> None:
 
 class ParsingError(Exception):
     """Exception raised for errors during the parsing/fetching process."""
-    pass
 
 
 @retry(
@@ -105,10 +109,10 @@ async def _call_llamaparse(parser: LlamaParse, file_path: str) -> str:
 
 
 async def parse_pdf(
-    arxiv_id: Optional[str] = None,
-    pdf_bytes: Optional[bytes] = None,
-    paper_id: Optional[UUID] = None,
-    api_key: Optional[str] = None,
+    arxiv_id: str | None = None,
+    pdf_bytes: bytes | None = None,
+    paper_id: UUID | None = None,
+    api_key: str | None = None,
 ) -> str:
     """
     Parse a PDF file (either from arXiv ID or raw bytes) using LlamaParse.

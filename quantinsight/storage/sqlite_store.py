@@ -1,18 +1,23 @@
 import os
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
-from datetime import datetime
-from typing import Optional, List, TypeVar, Type
-from sqlmodel import SQLModel, Field, Session, create_engine, select, Column, JSON
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
+from sqlmodel import JSON, Column, Field, Session, SQLModel, create_engine, select
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from quantinsight.schemas.models import (
-    SourcePaper,
-    PaperChunk,
-    TableUnit,
-    EquationUnit,
+    ChunkType,
     Citation,
     CitedSummary,
-    ChunkType
+    EquationUnit,
+    PaperChunk,
+    SourcePaper,
+    TableUnit,
 )
 
 WORKSPACE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -34,11 +39,11 @@ class SourcePaperDb(SQLModel, table=True):
     __tablename__ = "source_papers"
     
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    arxiv_id: Optional[str] = Field(default=None, index=True, unique=True)
+    arxiv_id: str | None = Field(default=None, index=True, unique=True)
     title: str
-    authors: List[str] = Field(sa_column=Column(JSON))
-    source_url: Optional[str] = None
-    ingested_at: datetime = Field(default_factory=datetime.utcnow)
+    authors: list[str] = Field(sa_column=Column(JSON))
+    source_url: str | None = None
+    ingested_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     raw_markdown_path: str
     page_count: int
 
@@ -50,9 +55,9 @@ class PaperChunkDb(SQLModel, table=True):
     chunk_type: str = Field(index=True)
     content: str
     page_number: int
-    section_title: Optional[str] = None
+    section_title: str | None = None
     order_index: int
-    embedding_id: Optional[str] = None
+    embedding_id: str | None = None
 
 class TableUnitDb(SQLModel, table=True):
     __tablename__ = "table_units"
@@ -60,9 +65,9 @@ class TableUnitDb(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     paper_id: UUID = Field(foreign_key="source_papers.id", index=True, ondelete="CASCADE")
     chunk_id: UUID = Field(foreign_key="paper_chunks.id", index=True, ondelete="CASCADE")
-    caption: Optional[str] = None
-    headers: List[str] = Field(sa_column=Column(JSON))
-    rows: List[List[str]] = Field(sa_column=Column(JSON))
+    caption: str | None = None
+    headers: list[str] = Field(sa_column=Column(JSON))
+    rows: list[list[str]] = Field(sa_column=Column(JSON))
     page_number: int
 
 class EquationUnitDb(SQLModel, table=True):
@@ -73,7 +78,7 @@ class EquationUnitDb(SQLModel, table=True):
     chunk_id: UUID = Field(foreign_key="paper_chunks.id", index=True, ondelete="CASCADE")
     latex: str
     surrounding_context: str
-    equation_label: Optional[str] = Field(default=None, index=True)
+    equation_label: str | None = Field(default=None, index=True)
     page_number: int
 
 class CitationDb(SQLModel, table=True):
@@ -83,7 +88,7 @@ class CitationDb(SQLModel, table=True):
     paper_id: UUID = Field(foreign_key="source_papers.id", index=True, ondelete="CASCADE")
     cited_text: str
     cited_work_raw: str
-    resolved_arxiv_id: Optional[str] = None
+    resolved_arxiv_id: str | None = None
 
 class CitedSummaryDb(SQLModel, table=True):
     __tablename__ = "cited_summaries"
@@ -91,9 +96,9 @@ class CitedSummaryDb(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     paper_id: UUID = Field(foreign_key="source_papers.id", index=True, ondelete="CASCADE")
     summary: str
-    key_claims: List[str] = Field(sa_column=Column(JSON))
-    supporting_chunk_ids: List[UUID] = Field(sa_column=Column(JSON))
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    key_claims: list[str] = Field(sa_column=Column(JSON))
+    supporting_chunk_ids: list[UUID] = Field(sa_column=Column(JSON))
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     model_used: str
 
 
@@ -195,10 +200,10 @@ def clean_paper_child_records(paper_id: UUID) -> None:
     reraise=True
 )
 def save_paper_elements(
-    chunks: List[PaperChunk],
-    tables: List[TableUnit],
-    equations: List[EquationUnit],
-    citations: List[Citation],
+    chunks: list[PaperChunk],
+    tables: list[TableUnit],
+    equations: list[EquationUnit],
+    citations: list[Citation],
     summary: CitedSummary
 ) -> None:
     """Save paper chunks, tables, equations, citations, and summaries to SQLite."""
@@ -272,7 +277,7 @@ def save_paper_elements(
         session.commit()
 
 # Query operations
-def get_paper_by_arxiv_id(arxiv_id: str) -> Optional[SourcePaper]:
+def get_paper_by_arxiv_id(arxiv_id: str) -> SourcePaper | None:
     """Retrieve SourcePaper model by arXiv ID from SQLite."""
     with Session(engine) as session:
         statement = select(SourcePaperDb).where(SourcePaperDb.arxiv_id == arxiv_id)
@@ -290,7 +295,7 @@ def get_paper_by_arxiv_id(arxiv_id: str) -> Optional[SourcePaper]:
             )
     return None
 
-def get_paper_by_id(paper_id: UUID) -> Optional[SourcePaper]:
+def get_paper_by_id(paper_id: UUID) -> SourcePaper | None:
     """Retrieve SourcePaper model by its UUID from SQLite."""
     with Session(engine) as session:
         statement = select(SourcePaperDb).where(SourcePaperDb.id == paper_id)
@@ -308,7 +313,7 @@ def get_paper_by_id(paper_id: UUID) -> Optional[SourcePaper]:
             )
     return None
 
-def get_paper_chunks(paper_id: UUID) -> List[PaperChunk]:
+def get_paper_chunks(paper_id: UUID) -> list[PaperChunk]:
     """Retrieve list of PaperChunks for a given paper_id."""
     with Session(engine) as session:
         statement = select(PaperChunkDb).where(PaperChunkDb.paper_id == paper_id).order_by(PaperChunkDb.order_index)
@@ -327,7 +332,7 @@ def get_paper_chunks(paper_id: UUID) -> List[PaperChunk]:
             for db_ch in db_chunks
         ]
 
-def get_paper_summary(paper_id: UUID) -> Optional[CitedSummary]:
+def get_paper_summary(paper_id: UUID) -> CitedSummary | None:
     """Retrieve the CitedSummary for a given paper_id."""
     with Session(engine) as session:
         statement = select(CitedSummaryDb).where(CitedSummaryDb.paper_id == paper_id)
@@ -344,7 +349,7 @@ def get_paper_summary(paper_id: UUID) -> Optional[CitedSummary]:
             )
     return None
 
-def list_all_papers() -> List[SourcePaper]:
+def list_all_papers() -> list[SourcePaper]:
     """List all ingested papers."""
     with Session(engine) as session:
         db_papers = session.exec(select(SourcePaperDb)).all()

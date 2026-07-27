@@ -1,15 +1,20 @@
-import os
-import re
 import json
 import logging
+import os
+import re
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
-from typing import List, Optional
-from datetime import datetime
-from dotenv import load_dotenv
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from groq import AsyncGroq, GroqError
 
-from quantinsight.schemas.models import PaperChunk, CitedSummary
+from dotenv import load_dotenv
+from groq import AsyncGroq, GroqError
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
+
+from quantinsight.schemas.models import CitedSummary, PaperChunk
 
 # Load environment variables
 load_dotenv()
@@ -57,7 +62,7 @@ def extract_json(text: str) -> dict:
 async def _call_groq_chat_completion(
     client: AsyncGroq,
     model: str,
-    messages: List[dict]
+    messages: list[dict]
 ) -> str:
     """
     Execute chat completion with tenacity retry rules.
@@ -72,8 +77,8 @@ async def _call_groq_chat_completion(
 
 async def generate_cited_summary(
     paper_id: UUID,
-    chunks: List[PaperChunk],
-    api_key: Optional[str] = None,
+    chunks: list[PaperChunk],
+    api_key: str | None = None,
     model: str = "llama-3.1-70b-versatile"
 ) -> CitedSummary:
     """
@@ -192,6 +197,6 @@ async def generate_cited_summary(
         summary=summary_text,
         key_claims=key_claims,
         supporting_chunk_ids=unique_chunk_ids,
-        generated_at=datetime.utcnow(),
+        generated_at=datetime.now(UTC),
         model_used=model
     )

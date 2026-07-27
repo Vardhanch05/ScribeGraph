@@ -1,11 +1,13 @@
-import pytest
-from uuid import uuid4, UUID
-from unittest.mock import AsyncMock, patch, MagicMock
-from datetime import datetime
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, patch
+from uuid import UUID, uuid4
 
-import quantinsight.storage.sqlite_store as sqlite_store
+import pytest
+
 from quantinsight.ingestion.pipeline import ingest_paper
-from quantinsight.schemas.models import CitedSummary, PaperChunk, ChunkType
+from quantinsight.schemas.models import CitedSummary
+from quantinsight.storage import sqlite_store
+
 
 @pytest.fixture(autouse=True)
 def mock_db():
@@ -36,7 +38,7 @@ And a table:
             summary="A summary of the test paper.",
             key_claims=["Claim A", "Claim B"],
             supporting_chunk_ids=[],
-            generated_at=datetime.utcnow(),
+            generated_at=datetime.now(UTC),
             model_used="mock-model"
         )
         

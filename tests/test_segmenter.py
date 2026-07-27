@@ -1,6 +1,8 @@
 from uuid import uuid4
+
 from quantinsight.ingestion.segmenter import segment_markdown
 from quantinsight.schemas.models import ChunkType
+
 
 def test_segment_markdown_basic():
     raw_md = """# Introduction
@@ -91,7 +93,7 @@ def test_segment_markdown_table_warnings():
 | Row 3 Col 1 | Row 3 Col 2 | Row 3 Col 3 |
 """
     paper_id = uuid4()
-    chunks, tables, equations, warnings = segment_markdown(raw_md, paper_id)
+    _chunks, tables, _equations, warnings = segment_markdown(raw_md, paper_id)
     
     # We expect 2 warnings because Row 2 has 1 column, and Row 3 has 3 columns (headers has 2).
     assert len(warnings) == 2

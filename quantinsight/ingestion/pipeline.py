@@ -1,34 +1,36 @@
+import logging
 import os
 import uuid
-import logging
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
-from typing import Optional, List, Tuple
-from datetime import datetime
 
-from quantinsight.schemas.models import SourcePaper, PaperChunk, TableUnit, EquationUnit, Citation, CitedSummary
 from quantinsight.ingestion.parser import parse_pdf
 from quantinsight.ingestion.segmenter import segment_markdown
 from quantinsight.ingestion.summary import generate_cited_summary
-from quantinsight.storage.sqlite_store import (
-    get_paper_by_arxiv_id,
-    save_paper_metadata,
-    clean_paper_child_records,
-    save_paper_elements,
-    init_db
+from quantinsight.schemas.models import (
+    Citation,
+    SourcePaper,
 )
-from quantinsight.storage.chroma_store import save_embeddings, delete_paper_embeddings
+from quantinsight.storage.chroma_store import delete_paper_embeddings, save_embeddings
+from quantinsight.storage.sqlite_store import (
+    clean_paper_child_records,
+    get_paper_by_arxiv_id,
+    init_db,
+    save_paper_elements,
+    save_paper_metadata,
+)
 
 logger = logging.getLogger(__name__)
 
 async def ingest_paper(
-    arxiv_id: Optional[str] = None,
-    pdf_bytes: Optional[bytes] = None,
-    title: Optional[str] = None,
-    authors: Optional[List[str]] = None,
-    api_key: Optional[str] = None,
-    groq_api_key: Optional[str] = None,
+    arxiv_id: str | None = None,
+    pdf_bytes: bytes | None = None,
+    title: str | None = None,
+    authors: list[str] | None = None,
+    api_key: str | None = None,
+    groq_api_key: str | None = None,
     model: str = "llama-3.1-70b-versatile"
-) -> Tuple[UUID, List[str]]:
+) -> tuple[UUID, list[str]]:
     """
     Orchestrate the ingestion pipeline:
     1. Parse PDF (LlamaParse) to get raw markdown
@@ -112,7 +114,7 @@ async def ingest_paper(
         title=resolved_title,
         authors=resolved_authors,
         source_url=f"https://arxiv.org/abs/{arxiv_id}" if arxiv_id else None,
-        ingested_at=datetime.utcnow(),
+        ingested_at=datetime.now(UTC),
         raw_markdown_path=raw_markdown_path,
         page_count=page_count
     )
@@ -121,7 +123,7 @@ async def ingest_paper(
     save_paper_metadata(paper)
     
     # Citations are empty for now as they're not extracted in Phase 1
-    citations: List[Citation] = []
+    citations: list[Citation] = []
     
     save_paper_elements(chunks, tables, equations, citations, summary)
     

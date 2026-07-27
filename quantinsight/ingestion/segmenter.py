@@ -1,9 +1,10 @@
 import re
-from typing import Optional, Tuple, List
 from uuid import UUID, uuid4
-from quantinsight.schemas.models import PaperChunk, TableUnit, EquationUnit, ChunkType
 
-def extract_equation_label(latex: str) -> Optional[str]:
+from quantinsight.schemas.models import ChunkType, EquationUnit, PaperChunk, TableUnit
+
+
+def extract_equation_label(latex: str) -> str | None:
     """
     Extract equation label like \\label{eq:foo} or a trailing number like (1).
     """
@@ -17,7 +18,7 @@ def extract_equation_label(latex: str) -> Optional[str]:
         return trailing_match.group(0)
     return None
 
-def split_table_row(line: str) -> List[str]:
+def split_table_row(line: str) -> list[str]:
     """
     Split a table row by pipe (|) delimiter, stripping cell content
     and handling outer pipes.
@@ -32,15 +33,14 @@ def is_table_separator(line: str) -> bool:
     Check if a line is a markdown table separator (e.g. |---| or :---:).
     """
     line_stripped = line.strip()
-    if not line_stripped.startswith("|") or not line_stripped.endswith("|"):
-        if "|" not in line_stripped:
-            return False
+    if (not line_stripped.startswith("|") or not line_stripped.endswith("|")) and "|" not in line_stripped:
+        return False
     return bool(re.match(r'^[\s|:\-]+$', line_stripped))
 
 def segment_markdown(
     raw_markdown: str, 
     paper_id: UUID
-) -> Tuple[List[PaperChunk], List[TableUnit], List[EquationUnit], List[str]]:
+) -> tuple[list[PaperChunk], list[TableUnit], list[EquationUnit], list[str]]:
     """
     Segment raw markdown into prose chunks, table units, and equation units.
     
@@ -55,10 +55,10 @@ def segment_markdown(
             - List of EquationUnit objects.
             - List of warning strings (low-confidence extraction flags).
     """
-    chunks: List[PaperChunk] = []
-    tables: List[TableUnit] = []
-    equations: List[EquationUnit] = []
-    warnings: List[str] = []
+    chunks: list[PaperChunk] = []
+    tables: list[TableUnit] = []
+    equations: list[EquationUnit] = []
+    warnings: list[str] = []
     
     # Split raw markdown by page breaks
     pages = re.split(r'\n---\n|\n--- Page Break ---\n|\f', raw_markdown)
@@ -162,12 +162,10 @@ def segment_markdown(
                     
                 headers = split_table_row(table_lines[0])
                 rows = []
-                is_valid = True
                 
                 for r_idx, row_line in enumerate(table_lines[2:], start=1):
                     row = split_table_row(row_line)
                     if len(row) != len(headers):
-                        is_valid = False
                         warnings.append(
                             f"Low-confidence table extraction on page {page_idx}: row {r_idx} has {len(row)} columns, expected {len(headers)}."
                         )
@@ -219,10 +217,7 @@ def segment_markdown(
                 if not next_line_strip:
                     break
                 # Check for new block types
-                if (next_line_strip.startswith("$$") or 
-                    next_line_strip.startswith(r"\[") or 
-                    next_line_strip.startswith(r"\begin{equation}") or 
-                    next_line_strip.startswith(r"\begin{align}")):
+                if (next_line_strip.startswith(("$$", r"\[", r"\begin{equation}", r"\begin{align}"))):
                     break
                 if "|" in next_line_strip and i + 1 < num_lines and is_table_separator(lines[i+1]):
                     break

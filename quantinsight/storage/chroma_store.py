@@ -1,11 +1,16 @@
-import os
 import logging
+import os
 from uuid import UUID
-from typing import List, Optional
-import chromadb
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from quantinsight.schemas.models import PaperChunk, TableUnit, EquationUnit, ChunkType
+import chromadb
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
+
+from quantinsight.schemas.models import ChunkType, EquationUnit, PaperChunk, TableUnit
 
 WORKSPACE_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CHROMA_DIR = os.path.join(WORKSPACE_ROOT, "data", "chroma")
@@ -59,9 +64,9 @@ def delete_paper_embeddings(paper_id: UUID) -> None:
     reraise=True
 )
 def save_embeddings(
-    chunks: List[PaperChunk],
-    tables: List[TableUnit],
-    equations: List[EquationUnit]
+    chunks: list[PaperChunk],
+    tables: list[TableUnit],
+    equations: list[EquationUnit]
 ) -> None:
     """
     Generate embeddings and save chunks, tables, and equations to ChromaDB.

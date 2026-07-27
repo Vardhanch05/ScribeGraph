@@ -1,8 +1,11 @@
-import pytest
+from unittest.mock import patch
 from uuid import uuid4
-from unittest.mock import AsyncMock, patch
-from quantinsight.ingestion.summary import generate_cited_summary, extract_json
-from quantinsight.schemas.models import PaperChunk, ChunkType, CitedSummary
+
+import pytest
+
+from quantinsight.ingestion.summary import extract_json, generate_cited_summary
+from quantinsight.schemas.models import ChunkType, CitedSummary, PaperChunk
+
 
 def test_extract_json():
     # Direct JSON
