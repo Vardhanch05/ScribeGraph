@@ -8,10 +8,10 @@
 
 ## Current Status
 
-- **Day:** Day 3
-- **Phase:** Phase 1 — Data Contracts & Ingestion Core
-- **Last completed task:** Task 15 — Implement scripts/ingest.py CLI
-- **Next task up:** Task 16 — Phase 2 Retrieval (ChromaDB collection setup and retrieval methods)
+- **Day:** Day 6
+- **Phase:** Phase 2 — Storage & Retrieval
+- **Last completed task:** Task 17 — Set up SQLite schema
+- **Next task up:** Task 18 — Embedding generation on ingest
 - **Blockers / open questions:** None
 
 ---
@@ -36,6 +36,8 @@
 | 2026-07-27 | 12 | 73ed5e9 | feat(ingestion): implement CitedSummary generation using Groq [task-12] | Added CitedSummary generation with tenancy retries and citation reference checking |
 | 2026-07-27 | 13/14 | 462eb39 | feat(ingestion): implement idempotent re-ingestion and storage foundation [task-13] [task-14] | Set up SQLModel storage layer with Cascade on delete and ChromaDB local vector store |
 | 2026-07-27 | 15 | d804f68 | feat(ingestion): complete ingestion CLI, clean up lints, and ensure timezone awareness [task-15] | Implemented scripts/ingest.py CLI with status reporting and ruff compliance |
+| 2026-07-30 | 16 | 9752c9e | feat(storage): make ChromaDB save/delete operations async with tenacity retries [task-16] | Converted chroma store operations to async and configured collections |
+| 2026-07-30 | 17 | 9230523 | feat(storage): setup SQLite schema and handle UUID json serialization in CitedSummary [task-17] | Set up database schema, enforced foreign keys with cascade on delete, and resolved UUID serialization issues |
 
 ---
 
