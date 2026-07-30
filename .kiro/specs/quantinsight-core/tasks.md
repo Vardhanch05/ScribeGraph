@@ -93,12 +93,12 @@
 
 ## Phase 2 — Storage & Retrieval
 
-- [ ] 16. Set up ChromaDB collections
+- [x] 16. Set up ChromaDB collections
   - Create `prose_chunks`, `table_chunks`, `equation_chunks` collections in `storage/chroma_store.py`
   - Async read/write functions; wrap with retry (max 2) + exception handling
   - Relevant requirements: FR-8, NFR-3
 
-- [ ] 17. Set up SQLite schema (`storage/sqlite_store.py`)
+- [x] 17. Set up SQLite schema (`storage/sqlite_store.py`)
   - Tables: `source_papers`, `paper_chunks`, `table_units`, `equation_units`, `citations`, `cited_summaries`
   - Foreign keys enforced; separate DB file for LangGraph checkpoints
   - Relevant requirements: NFR-2, CP-4, CP-5

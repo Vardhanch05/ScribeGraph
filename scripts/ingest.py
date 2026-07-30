@@ -61,7 +61,7 @@ async def main():
             print(f"  {idx}. {w}")
         print("="*50 + "\n")
         
-    except Exception as e:
+    except Exception:
         logger.exception("Ingestion failed")
         sys.exit(1)
 
