@@ -160,7 +160,7 @@ class GraphState(BaseModel):
     draft_answer: str | None = None
     verification_notes: list[str] = []
     needs_revision: bool = False
-    revision_count: int = 0          # enforces CP-7 max-2 loop cap
+    revision_count: int = 0  # enforces CP-7 max-2 loop cap
     final_answer: QueryResponse | None = None
     trace: list[AgentTraceStep] = []
 ```

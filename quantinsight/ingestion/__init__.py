@@ -8,8 +8,5 @@ __all__ = [
     "generate_cited_summary",
     "ingest_paper",
     "parse_pdf",
-    "segment_markdown"
+    "segment_markdown",
 ]
-
-
-

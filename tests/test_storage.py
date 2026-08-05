@@ -196,3 +196,139 @@ def test_save_paper_elements_and_cascade(temp_db):
 
         # Source paper must still exist
         assert len(session.exec(select(SourcePaperDb)).all()) == 1
+
+
+@pytest.fixture
+def temp_chroma(tmp_path):
+    from quantinsight.storage import chroma_store
+
+    test_chroma_dir = str(tmp_path / "chroma")
+    original_chroma_dir = chroma_store.CHROMA_DIR
+    chroma_store.CHROMA_DIR = test_chroma_dir
+
+    yield test_chroma_dir
+
+    # Restore original path
+    chroma_store.CHROMA_DIR = original_chroma_dir
+
+
+@pytest.mark.anyio
+async def test_save_and_delete_embeddings(temp_chroma):
+    import uuid
+
+    from quantinsight.schemas.models import (
+        ChunkType,
+        EquationUnit,
+        PaperChunk,
+        TableUnit,
+    )
+    from quantinsight.storage.chroma_store import (
+        delete_paper_embeddings,
+        get_chroma_client,
+        save_embeddings,
+    )
+
+    paper_id = uuid.uuid4()
+
+    # 1. Create a prose chunk, a table chunk, and an equation chunk
+    chunk_prose_id = uuid.uuid4()
+    chunk_prose = PaperChunk(
+        id=chunk_prose_id,
+        paper_id=paper_id,
+        chunk_type=ChunkType.PROSE,
+        content="This is a prose chunk describing attention mechanism.",
+        page_number=1,
+        section_title="Introduction",
+        order_index=0,
+    )
+
+    chunk_table_id = uuid.uuid4()
+    chunk_table = PaperChunk(
+        id=chunk_table_id,
+        paper_id=paper_id,
+        chunk_type=ChunkType.TABLE,
+        content="This chunk contains a table of experiment results.",
+        page_number=2,
+        section_title="Experiments",
+        order_index=1,
+    )
+
+    chunk_eq_id = uuid.uuid4()
+    chunk_eq = PaperChunk(
+        id=chunk_eq_id,
+        paper_id=paper_id,
+        chunk_type=ChunkType.EQUATION,
+        content="This chunk contains the main formula.",
+        page_number=3,
+        section_title="Method",
+        order_index=2,
+    )
+
+    # Create TableUnit and EquationUnit
+    table = TableUnit(
+        id=uuid.uuid4(),
+        paper_id=paper_id,
+        chunk_id=chunk_table_id,
+        caption="Experiment results",
+        headers=["Model", "Accuracy"],
+        rows=[["Baseline", "0.85"], ["Ours", "0.92"]],
+        page_number=2,
+    )
+
+    eq = EquationUnit(
+        id=uuid.uuid4(),
+        paper_id=paper_id,
+        chunk_id=chunk_eq_id,
+        latex="E = mc^2",
+        surrounding_context="Relativistic energy-mass relation",
+        page_number=3,
+    )
+
+    chunks = [chunk_prose, chunk_table, chunk_eq]
+
+    # 2. Save embeddings
+    await save_embeddings(chunks, [table], [eq])
+
+    # Assert embedding_ids are populated
+    assert chunk_prose.embedding_id == str(chunk_prose_id)
+    assert chunk_table.embedding_id == str(chunk_table_id)
+    assert chunk_eq.embedding_id == str(chunk_eq_id)
+
+    # 3. Retrieve from Chroma to verify they are saved
+    client = get_chroma_client()
+
+    prose_coll = client.get_collection("prose_chunks")
+    table_coll = client.get_collection("table_chunks")
+    eq_coll = client.get_collection("equation_chunks")
+
+    # Check prose collection
+    prose_res = prose_coll.get(ids=[str(chunk_prose_id)])
+    assert len(prose_res["ids"]) == 1
+    assert prose_res["metadatas"][0]["paper_id"] == str(paper_id)
+    assert prose_res["metadatas"][0]["page_number"] == 1
+    assert "attention mechanism" in prose_res["documents"][0]
+
+    # Check table collection
+    table_res = table_coll.get(ids=[str(chunk_table_id)])
+    assert len(table_res["ids"]) == 1
+    assert table_res["metadatas"][0]["paper_id"] == str(paper_id)
+    assert "Experiment results" in table_res["documents"][0]
+
+    # Check equation collection
+    eq_res = eq_coll.get(ids=[str(chunk_eq_id)])
+    assert len(eq_res["ids"]) == 1
+    assert eq_res["metadatas"][0]["paper_id"] == str(paper_id)
+    assert "E = mc^2" in eq_res["documents"][0]
+
+    # 4. Delete paper embeddings
+    await delete_paper_embeddings(paper_id)
+
+    # Verify they are deleted
+    prose_res_after = prose_coll.get(ids=[str(chunk_prose_id)])
+    assert len(prose_res_after["ids"]) == 0
+
+    table_res_after = table_coll.get(ids=[str(chunk_table_id)])
+    assert len(table_res_after["ids"]) == 0
+
+    eq_res_after = eq_coll.get(ids=[str(chunk_eq_id)])
+    assert len(eq_res_after["ids"]) == 0

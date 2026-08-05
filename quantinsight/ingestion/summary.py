@@ -21,13 +21,14 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+
 def extract_json(text: str) -> dict:
     """
     Extract and parse a JSON object from text, handling markdown code blocks
     or malformed whitespace gracefully.
     """
     text_strip = text.strip()
-    
+
     # Try direct parse
     try:
         return json.loads(text_strip)
@@ -35,7 +36,7 @@ def extract_json(text: str) -> dict:
         pass
 
     # Try matching within ```json ... ``` or ``` ... ```
-    match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
+    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
     if match:
         try:
             return json.loads(match.group(1))
@@ -43,26 +44,25 @@ def extract_json(text: str) -> dict:
             pass
 
     # Try finding the first '{' and last '}'
-    first_bracket = text_strip.find('{')
-    last_bracket = text_strip.rfind('}')
+    first_bracket = text_strip.find("{")
+    last_bracket = text_strip.rfind("}")
     if first_bracket != -1 and last_bracket != -1:
         try:
-            return json.loads(text_strip[first_bracket:last_bracket + 1])
+            return json.loads(text_strip[first_bracket : last_bracket + 1])
         except json.JSONDecodeError:
             pass
 
     raise ValueError(f"Failed to parse JSON from text response: {text[:200]}...")
 
+
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
     retry=retry_if_exception_type((GroqError, IOError)),
-    reraise=True
+    reraise=True,
 )
 async def _call_groq_chat_completion(
-    client: AsyncGroq,
-    model: str,
-    messages: list[dict]
+    client: AsyncGroq, model: str, messages: list[dict]
 ) -> str:
     """
     Execute chat completion with tenacity retry rules.
@@ -75,22 +75,23 @@ async def _call_groq_chat_completion(
     )
     return response.choices[0].message.content
 
+
 async def generate_cited_summary(
     paper_id: UUID,
     chunks: list[PaperChunk],
     api_key: str | None = None,
-    model: str = "llama-3.1-70b-versatile"
+    model: str = "llama-3.1-70b-versatile",
 ) -> CitedSummary:
     """
     Generate a CitedSummary for a given paper by summarizing the text chunks using Groq,
     ensuring all claims reference valid chunk IDs.
-    
+
     Args:
         paper_id: The UUID of the source paper.
         chunks: List of PaperChunks extracted from the paper.
         api_key: Optional Groq API key (defaults to GROQ_API_KEY env var).
         model: Groq model name to use.
-        
+
     Returns:
         A validated CitedSummary Pydantic model.
     """
@@ -127,10 +128,10 @@ async def generate_cited_summary(
     )
 
     client = AsyncGroq(api_key=resolved_api_key)
-    
+
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt}
+        {"role": "user", "content": user_prompt},
     ]
 
     try:
@@ -147,20 +148,20 @@ async def generate_cited_summary(
 
     summary_text = data.get("summary", "").strip()
     claims_data = data.get("claims", [])
-    
+
     if not summary_text:
         raise ValueError("LLM response did not contain a valid 'summary' field")
 
     key_claims = []
     supporting_chunk_ids = []
-    
+
     valid_chunk_ids = {c.id for c in chunks}
 
     for idx, claim_item in enumerate(claims_data):
         claim_str = claim_item.get("claim", "").strip()
         if not claim_str:
             continue
-        
+
         cids = claim_item.get("supporting_chunk_ids", [])
         parsed_cids = []
         for cid in cids:
@@ -198,5 +199,5 @@ async def generate_cited_summary(
         key_claims=key_claims,
         supporting_chunk_ids=unique_chunk_ids,
         generated_at=datetime.now(UTC),
-        model_used=model
+        model_used=model,
     )

@@ -99,17 +99,17 @@ class PaperChunk(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     paper_id: UUID
     chunk_type: ChunkType
-    content: str                     # markdown/latex-preserving text
+    content: str  # markdown/latex-preserving text
     page_number: int
     section_title: str | None = None
-    order_index: int                 # preserves reading order within the paper
+    order_index: int  # preserves reading order within the paper
     embedding_id: str | None = None  # pointer into ChromaDB
 
 
 class TableUnit(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     paper_id: UUID
-    chunk_id: UUID                   # links back to the PaperChunk it was extracted from
+    chunk_id: UUID  # links back to the PaperChunk it was extracted from
     caption: str | None = None
     headers: list[str]
     rows: list[list[str]]
@@ -121,7 +121,9 @@ class EquationUnit(BaseModel):
     paper_id: UUID
     chunk_id: UUID
     latex: str
-    surrounding_context: str         # sentence(s) immediately before/after, for retrieval relevance
+    surrounding_context: (
+        str  # sentence(s) immediately before/after, for retrieval relevance
+    )
     equation_label: str | None = None  # e.g. "(3)" if numbered in source
     page_number: int
 
@@ -129,8 +131,8 @@ class EquationUnit(BaseModel):
 class Citation(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     paper_id: UUID
-    cited_text: str                  # the in-text citation marker/context
-    cited_work_raw: str               # raw reference string from bibliography
+    cited_text: str  # the in-text citation marker/context
+    cited_work_raw: str  # raw reference string from bibliography
     resolved_arxiv_id: str | None = None  # if resolvable
 
 
@@ -146,7 +148,7 @@ class CitedSummary(BaseModel):
 
 class AgentTraceStep(BaseModel):
     step_index: int
-    node_name: str                   # e.g. "planner", "retriever", "verifier", "synthesizer"
+    node_name: str  # e.g. "planner", "retriever", "verifier", "synthesizer"
     input_summary: str
     output_summary: str
     tool_calls: list[dict] = Field(default_factory=list)
@@ -155,7 +157,7 @@ class AgentTraceStep(BaseModel):
 
 class QueryResponse(BaseModel):
     answer: str
-    citations: list[UUID]            # PaperChunk / TableUnit / EquationUnit ids used
+    citations: list[UUID]  # PaperChunk / TableUnit / EquationUnit ids used
     trace: list[AgentTraceStep]
     self_correction_applied: bool
     confidence_note: str | None = None

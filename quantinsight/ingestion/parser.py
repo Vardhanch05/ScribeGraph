@@ -56,25 +56,23 @@ class ParsingError(Exception):
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
     retry=retry_if_exception_type((httpx.HTTPError, ParsingError)),
-    reraise=True
+    reraise=True,
 )
 async def fetch_arxiv_pdf(arxiv_id: str) -> bytes:
     """
     Fetch PDF bytes for a given arXiv ID.
-    
+
     Args:
         arxiv_id: The arXiv identifier (e.g., "1706.03762").
-        
+
     Returns:
         bytes: The PDF file content.
     """
     arxiv_id = arxiv_id.strip()
     url = f"https://arxiv.org/pdf/{arxiv_id}"
-    
-    headers = {
-        "User-Agent": "QuantInsight/0.1 (mailto:contact@quantinsight.org)"
-    }
-    
+
+    headers = {"User-Agent": "QuantInsight/0.1 (mailto:contact@quantinsight.org)"}
+
     async with httpx.AsyncClient(follow_redirects=True) as client:
         try:
             logger.info(f"Fetching PDF from arXiv: {url}")
@@ -83,7 +81,9 @@ async def fetch_arxiv_pdf(arxiv_id: str) -> bytes:
             return response.content
         except httpx.HTTPStatusError as e:
             logger.error(f"HTTP error fetching arXiv ID {arxiv_id}: {e}")
-            raise ParsingError(f"HTTP error fetching from arXiv: {e.response.status_code}") from e
+            raise ParsingError(
+                f"HTTP error fetching from arXiv: {e.response.status_code}"
+            ) from e
         except Exception as e:
             logger.error(f"Error fetching arXiv ID {arxiv_id}: {e}")
             raise ParsingError(f"Failed to download PDF from arXiv: {e}") from e
@@ -92,7 +92,7 @@ async def fetch_arxiv_pdf(arxiv_id: str) -> bytes:
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
-    reraise=True
+    reraise=True,
 )
 async def _call_llamaparse(parser: LlamaParse, file_path: str) -> str:
     """
@@ -116,13 +116,13 @@ async def parse_pdf(
 ) -> str:
     """
     Parse a PDF file (either from arXiv ID or raw bytes) using LlamaParse.
-    
+
     Args:
         arxiv_id: Optional arXiv ID to fetch and parse.
         pdf_bytes: Optional raw PDF bytes to parse.
         paper_id: Optional UUID associated with the paper.
         api_key: Optional LlamaParse API key. Defaults to LLAMA_CLOUD_API_KEY env var.
-        
+
     Returns:
         str: Raw parsed Markdown string.
     """
@@ -130,13 +130,13 @@ async def parse_pdf(
         raise ValueError("Either arxiv_id or pdf_bytes must be provided.")
     if arxiv_id is not None and pdf_bytes is not None:
         raise ValueError("Only one of arxiv_id or pdf_bytes can be provided.")
-    
+
     current_paper_id = paper_id or uuid4()
-    
+
     # 48h Cache Avoidance Check
     cache = _load_cache()
     cached_paper_id = None
-    
+
     if paper_id is not None:
         cached_paper_id = paper_id
     elif arxiv_id is not None:
@@ -145,7 +145,7 @@ async def parse_pdf(
             entry = cache[arxiv_key]
             if time.time() - entry.get("timestamp", 0) < 48 * 3600:
                 cached_paper_id = UUID(entry["paper_id"])
-                
+
     if cached_paper_id is not None:
         cached_file_path = os.path.join(ARTIFACTS_DIR, str(cached_paper_id), "raw.md")
         if os.path.exists(cached_file_path):
@@ -153,44 +153,48 @@ async def parse_pdf(
                 # Double check that the file is less than 48 hours old on disk
                 mtime = os.path.getmtime(cached_file_path)
                 if time.time() - mtime < 48 * 3600:
-                    logger.info(f"Cache hit! Loading parsed Markdown from {cached_file_path}")
+                    logger.info(
+                        f"Cache hit! Loading parsed Markdown from {cached_file_path}"
+                    )
                     with open(cached_file_path, "r", encoding="utf-8") as f:
                         return f.read()
             except Exception as e:
-                logger.warning(f"Failed to read from cache file {cached_file_path}: {e}")
+                logger.warning(
+                    f"Failed to read from cache file {cached_file_path}: {e}"
+                )
 
     # Resolve API Key
     llama_key = api_key or os.getenv("LLAMA_CLOUD_API_KEY")
     if not llama_key:
         raise ValueError("LLAMA_CLOUD_API_KEY is not set.")
-    
+
     # If arXiv ID is provided, download PDF bytes
     if arxiv_id is not None:
         pdf_bytes = await fetch_arxiv_pdf(arxiv_id)
-        
+
     # Write bytes to a temporary file
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
         tmp_file.write(pdf_bytes)
         tmp_path = tmp_file.name
-        
+
     try:
         # Initialize LlamaParse
         parser = LlamaParse(
             api_key=llama_key,
             result_type="markdown",
         )
-        
+
         # Resolve semaphore in active event loop
         global _parse_semaphore
         if _parse_semaphore is None:
             _parse_semaphore = asyncio.Semaphore(20)
-            
+
         async with _parse_semaphore:
             logger.info("Acquired LlamaParse semaphore slot. Calling API...")
             markdown_content = await _call_llamaparse(parser, tmp_path)
             # Short sleep to prevent hitting rate limits during sequential calls
             await asyncio.sleep(3.0)
-            
+
         # Persist raw markdown to artifact store
         paper_artifacts_dir = os.path.join(ARTIFACTS_DIR, str(current_paper_id))
         os.makedirs(paper_artifacts_dir, exist_ok=True)
@@ -201,21 +205,19 @@ async def parse_pdf(
             logger.info(f"Persisted raw Markdown to {markdown_file_path}")
         except Exception as e:
             logger.error(f"Failed to persist raw Markdown to {markdown_file_path}: {e}")
-            
+
         # Update cache mapping if arxiv_id is present
         if arxiv_id is not None:
             arxiv_key = f"arxiv_{arxiv_id.strip()}"
             cache[arxiv_key] = {
                 "paper_id": str(current_paper_id),
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
             _save_cache(cache)
-            
+
         return markdown_content
     finally:
         try:
             os.unlink(tmp_path)
         except OSError:
             pass
-
-

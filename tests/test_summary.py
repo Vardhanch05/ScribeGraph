@@ -18,9 +18,10 @@ def test_extract_json():
     assert extract_json('```\n{"key": "value"}\n```') == {"key": "value"}
     # Leading text then JSON
     assert extract_json('Here is the json: {"key": "value"}') == {"key": "value"}
-    
+
     with pytest.raises(ValueError):
         extract_json("not json")
+
 
 @pytest.mark.anyio
 @patch("quantinsight.ingestion.summary._call_groq_chat_completion")
@@ -32,7 +33,7 @@ async def test_generate_cited_summary_success(mock_call_groq):
         chunk_type=ChunkType.PROSE,
         content="This is the first chunk content.",
         page_number=1,
-        order_index=0
+        order_index=0,
     )
     chunk2 = PaperChunk(
         id=uuid4(),
@@ -40,9 +41,9 @@ async def test_generate_cited_summary_success(mock_call_groq):
         chunk_type=ChunkType.PROSE,
         content="This is the second chunk content.",
         page_number=2,
-        order_index=1
+        order_index=1,
     )
-    
+
     # Mock LLM response
     mock_response = f"""
     {{
@@ -60,23 +61,22 @@ async def test_generate_cited_summary_success(mock_call_groq):
     }}
     """
     mock_call_groq.return_value = mock_response
-    
+
     summary = await generate_cited_summary(
-        paper_id=paper_id,
-        chunks=[chunk1, chunk2],
-        api_key="mock_key"
+        paper_id=paper_id, chunks=[chunk1, chunk2], api_key="mock_key"
     )
-    
+
     assert isinstance(summary, CitedSummary)
     assert summary.paper_id == paper_id
     assert summary.summary == "This is a great summary of the paper."
     assert summary.key_claims == [
         "Claim 1 supported by chunk 1",
-        "Claim 2 supported by both chunks"
+        "Claim 2 supported by both chunks",
     ]
     # Verify both chunk IDs are present and deduplicated
     assert set(summary.supporting_chunk_ids) == {chunk1.id, chunk2.id}
     assert summary.model_used == "llama-3.1-70b-versatile"
+
 
 @pytest.mark.anyio
 @patch("quantinsight.ingestion.summary._call_groq_chat_completion")
@@ -88,9 +88,9 @@ async def test_generate_cited_summary_fallback_on_invalid_citations(mock_call_gr
         chunk_type=ChunkType.PROSE,
         content="First chunk.",
         page_number=1,
-        order_index=0
+        order_index=0,
     )
-    
+
     # Mock response returning hallucinated chunk ID
     hallucinated_id = uuid4()
     mock_response = f"""
@@ -105,15 +105,14 @@ async def test_generate_cited_summary_fallback_on_invalid_citations(mock_call_gr
     }}
     """
     mock_call_groq.return_value = mock_response
-    
+
     summary = await generate_cited_summary(
-        paper_id=paper_id,
-        chunks=[chunk1],
-        api_key="mock_key"
+        paper_id=paper_id, chunks=[chunk1], api_key="mock_key"
     )
-    
+
     # Must fallback to the only valid chunk (chunk1.id)
     assert summary.supporting_chunk_ids == [chunk1.id]
+
 
 @pytest.mark.anyio
 @patch("quantinsight.ingestion.summary._call_groq_chat_completion")
@@ -125,14 +124,12 @@ async def test_generate_cited_summary_invalid_json(mock_call_groq):
         chunk_type=ChunkType.PROSE,
         content="Content.",
         page_number=1,
-        order_index=0
+        order_index=0,
     )
-    
+
     mock_call_groq.return_value = "invalid json from LLM"
-    
+
     with pytest.raises(RuntimeError, match="Invalid JSON response from LLM"):
         await generate_cited_summary(
-            paper_id=paper_id,
-            chunks=[chunk1],
-            api_key="mock_key"
+            paper_id=paper_id, chunks=[chunk1], api_key="mock_key"
         )
