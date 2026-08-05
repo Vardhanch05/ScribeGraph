@@ -10,8 +10,8 @@
 
 - **Day:** Day 6
 - **Phase:** Phase 2 — Storage & Retrieval
-- **Last completed task:** Task 18 — Embedding generation on ingest
-- **Next task up:** Task 19 — Type-aware `search()`
+- **Last completed task:** Task 19 — Type-aware `search()`
+- **Next task up:** Task 20 — Multi-paper query support in `search()`
 - **Blockers / open questions:** None
 
 ---
@@ -39,6 +39,7 @@
 | 2026-07-30 | 16 | 9752c9e | feat(storage): make ChromaDB save/delete operations async with tenacity retries [task-16] | Converted chroma store operations to async and configured collections |
 | 2026-07-30 | 17 | 9230523 | feat(storage): setup SQLite schema and handle UUID json serialization in CitedSummary [task-17] | Set up database schema, enforced foreign keys with cascade on delete, and resolved UUID serialization issues |
 | 2026-08-05 | 18 | 4f9bd16 | feat(storage): implement embedding generation on ingest and verify via unit tests [task-18] | Added unit tests and verified ChromaDB embedding generation |
+| 2026-08-05 | 19 | e23ef84 | feat(storage): implement type-aware search routing based on chunk_types [task-19] | Implemented type-aware ChromaDB queries and SQLite object resolution |
 
 ---
 
