@@ -407,3 +407,61 @@ def list_all_papers() -> list[SourcePaper]:
             )
             for p in db_papers
         ]
+
+
+def get_chunk_by_id(chunk_id: UUID) -> PaperChunk | None:
+    """Retrieve a PaperChunk by its UUID from SQLite."""
+    with Session(engine) as session:
+        db_ch = session.exec(
+            select(PaperChunkDb).where(PaperChunkDb.id == chunk_id)
+        ).first()
+        if db_ch:
+            return PaperChunk(
+                id=db_ch.id,
+                paper_id=db_ch.paper_id,
+                chunk_type=ChunkType(db_ch.chunk_type),
+                content=db_ch.content,
+                page_number=db_ch.page_number,
+                section_title=db_ch.section_title,
+                order_index=db_ch.order_index,
+                embedding_id=db_ch.embedding_id,
+            )
+    return None
+
+
+def get_table_by_chunk_id(chunk_id: UUID) -> TableUnit | None:
+    """Retrieve a TableUnit by its chunk UUID from SQLite."""
+    with Session(engine) as session:
+        db_table = session.exec(
+            select(TableUnitDb).where(TableUnitDb.chunk_id == chunk_id)
+        ).first()
+        if db_table:
+            return TableUnit(
+                id=db_table.id,
+                paper_id=db_table.paper_id,
+                chunk_id=db_table.chunk_id,
+                caption=db_table.caption,
+                headers=db_table.headers,
+                rows=db_table.rows,
+                page_number=db_table.page_number,
+            )
+    return None
+
+
+def get_equation_by_chunk_id(chunk_id: UUID) -> EquationUnit | None:
+    """Retrieve an EquationUnit by its chunk UUID from SQLite."""
+    with Session(engine) as session:
+        db_eq = session.exec(
+            select(EquationUnitDb).where(EquationUnitDb.chunk_id == chunk_id)
+        ).first()
+        if db_eq:
+            return EquationUnit(
+                id=db_eq.id,
+                paper_id=db_eq.paper_id,
+                chunk_id=db_eq.chunk_id,
+                latex=db_eq.latex,
+                surrounding_context=db_eq.surrounding_context,
+                equation_label=db_eq.equation_label,
+                page_number=db_eq.page_number,
+            )
+    return None

@@ -332,3 +332,145 @@ async def test_save_and_delete_embeddings(temp_chroma):
 
     eq_res_after = eq_coll.get(ids=[str(chunk_eq_id)])
     assert len(eq_res_after["ids"]) == 0
+
+
+@pytest.mark.anyio
+async def test_search_embeddings(temp_chroma, temp_db):
+    import uuid
+
+    from quantinsight.schemas.models import (
+        ChunkType,
+        EquationUnit,
+        PaperChunk,
+        SourcePaper,
+        TableUnit,
+    )
+    from quantinsight.storage.chroma_store import save_embeddings, search
+    from quantinsight.storage.sqlite_store import (
+        save_paper_elements,
+        save_paper_metadata,
+    )
+
+    paper_id = uuid.uuid4()
+    paper = SourcePaper(
+        id=paper_id,
+        arxiv_id="2303.12345",
+        title="Attention Paper",
+        authors=["Author One"],
+        source_url="https://arxiv.org/abs/2303.12345",
+        ingested_at=datetime.now(UTC),
+        raw_markdown_path="/dummy/path/raw.md",
+        page_count=5,
+    )
+    save_paper_metadata(paper)
+
+    # 1. Create chunks
+    chunk_prose = PaperChunk(
+        id=uuid.uuid4(),
+        paper_id=paper_id,
+        chunk_type=ChunkType.PROSE,
+        content="This is a prose chunk describing attention mechanism.",
+        page_number=1,
+        section_title="Introduction",
+        order_index=0,
+    )
+    chunk_table = PaperChunk(
+        id=uuid.uuid4(),
+        paper_id=paper_id,
+        chunk_type=ChunkType.TABLE,
+        content="This chunk contains a table of experiment results.",
+        page_number=2,
+        section_title="Experiments",
+        order_index=1,
+    )
+    chunk_eq = PaperChunk(
+        id=uuid.uuid4(),
+        paper_id=paper_id,
+        chunk_type=ChunkType.EQUATION,
+        content="This chunk contains the main formula.",
+        page_number=3,
+        section_title="Method",
+        order_index=2,
+    )
+
+    # Create TableUnit and EquationUnit
+    table = TableUnit(
+        id=uuid.uuid4(),
+        paper_id=paper_id,
+        chunk_id=chunk_table.id,
+        caption="Experiment results",
+        headers=["Model", "Accuracy"],
+        rows=[["Baseline", "0.85"], ["Ours", "0.92"]],
+        page_number=2,
+    )
+
+    eq = EquationUnit(
+        id=uuid.uuid4(),
+        paper_id=paper_id,
+        chunk_id=chunk_eq.id,
+        latex="E = mc^2",
+        surrounding_context="Relativistic energy-mass relation",
+        page_number=3,
+    )
+
+    # Create CitedSummary
+    summary = CitedSummary(
+        id=uuid.uuid4(),
+        paper_id=paper_id,
+        summary="Dummy summary text.",
+        key_claims=["Claim 1", "Claim 2"],
+        supporting_chunk_ids=[chunk_prose.id],
+        model_used="gpt-4o",
+    )
+
+    # Save to SQLite and Chroma
+    save_paper_elements(
+        [chunk_prose, chunk_table, chunk_eq], [table], [eq], [], summary
+    )
+    await save_embeddings([chunk_prose, chunk_table, chunk_eq], [table], [eq])
+
+    # 2. Test Type-aware routing (prose only)
+    results_prose = await search(
+        query="attention mechanism",
+        paper_ids=[paper_id],
+        chunk_types=[ChunkType.PROSE],
+    )
+    assert len(results_prose) > 0
+    assert all(isinstance(r, PaperChunk) for r in results_prose)
+    assert results_prose[0].id == chunk_prose.id
+
+    # 3. Test Type-aware routing (table only)
+    results_table = await search(
+        query="experiment results table",
+        paper_ids=[paper_id],
+        chunk_types=[ChunkType.TABLE],
+    )
+    assert len(results_table) > 0
+    assert all(isinstance(r, TableUnit) for r in results_table)
+    assert results_table[0].chunk_id == chunk_table.id
+
+    # 4. Test Type-aware routing (equation only)
+    results_eq = await search(
+        query="E = mc^2 formula",
+        paper_ids=[paper_id],
+        chunk_types=[ChunkType.EQUATION],
+    )
+    assert len(results_eq) > 0
+    assert all(isinstance(r, EquationUnit) for r in results_eq)
+    assert results_eq[0].chunk_id == chunk_eq.id
+
+    # 5. Test search with no chunk types specified (should search all collections)
+    results_all = await search(
+        query="E = mc^2",
+        paper_ids=[paper_id],
+    )
+    assert len(results_all) > 0
+    # The top result should be the equation, as it's the most semantically relevant
+    assert isinstance(results_all[0], EquationUnit)
+
+    # 6. Test search with wrong paper_id (should return nothing)
+    results_empty = await search(
+        query="attention",
+        paper_ids=[uuid.uuid4()],
+    )
+    assert len(results_empty) == 0

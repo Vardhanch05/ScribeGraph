@@ -165,3 +165,102 @@ async def save_embeddings(
                     chunk_map[eq.chunk_id].embedding_id = str(eq.chunk_id)
 
     await asyncio.to_thread(_save)
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=0.5, min=1, max=5),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+async def search(
+    query: str,
+    paper_ids: list[UUID] | None = None,
+    chunk_types: list[ChunkType] | None = None,
+    limit: int = 5,
+) -> list[PaperChunk | TableUnit | EquationUnit]:
+    """
+    Search ChromaDB collections and retrieve the original structured objects from SQLite.
+
+    Routes queries to the appropriate collections based on chunk_types.
+    If chunk_types is empty/None, searches all collections.
+    """
+    from quantinsight.storage.sqlite_store import (
+        get_chunk_by_id,
+        get_equation_by_chunk_id,
+        get_table_by_chunk_id,
+    )
+
+    def _search() -> list[tuple[str, UUID, float]]:
+        client = get_chroma_client()
+        model = get_embedding_model()
+        query_vector = model.encode(query).tolist()
+
+        # 1. Determine collections to query
+        collections_to_search = set()
+        if not chunk_types:
+            collections_to_search = {"prose_chunks", "table_chunks", "equation_chunks"}
+        else:
+            for ct in chunk_types:
+                if ct in (ChunkType.PROSE, ChunkType.FIGURE_CAPTION):
+                    collections_to_search.add("prose_chunks")
+                elif ct == ChunkType.TABLE:
+                    collections_to_search.add("table_chunks")
+                elif ct == ChunkType.EQUATION:
+                    collections_to_search.add("equation_chunks")
+
+        # 2. Build ChromaDB metadata filter
+        where_filter = None
+        if paper_ids:
+            if len(paper_ids) == 1:
+                where_filter = {"paper_id": str(paper_ids[0])}
+            else:
+                where_filter = {"paper_id": {"$in": [str(pid) for pid in paper_ids]}}
+
+        # 3. Query target collections
+        raw_results = []
+        for col_name in collections_to_search:
+            try:
+                coll = client.get_collection(col_name)
+                results = coll.query(
+                    query_embeddings=[query_vector],
+                    n_results=limit,
+                    where=where_filter,
+                )
+                if results and "ids" in results and results["ids"]:
+                    ids = results["ids"][0]
+                    distances = (
+                        results["distances"][0]
+                        if results.get("distances")
+                        else [0.0] * len(ids)
+                    )
+                    for doc_id, dist in zip(ids, distances):
+                        raw_results.append((col_name, UUID(doc_id), dist))
+            except ValueError:
+                # Collection does not exist yet, skip
+                continue
+
+        # 4. Sort all results by distance (ascending) and take top limit
+        raw_results.sort(key=lambda x: x[2])
+        return raw_results[:limit]
+
+    # Run ChromaDB retrieval in thread pool
+    raw_results = await asyncio.to_thread(_search)
+
+    # 5. Resolve SQLite objects for the top matches
+    resolved_elements = []
+    for col_name, item_id, _dist in raw_results:
+        if col_name == "prose_chunks":
+            chunk = get_chunk_by_id(item_id)
+            if chunk:
+                resolved_elements.append(chunk)
+        elif col_name == "table_chunks":
+            table = get_table_by_chunk_id(item_id)
+            if table:
+                resolved_elements.append(table)
+        elif col_name == "equation_chunks":
+            eq = get_equation_by_chunk_id(item_id)
+            if eq:
+                resolved_elements.append(eq)
+
+    return resolved_elements
