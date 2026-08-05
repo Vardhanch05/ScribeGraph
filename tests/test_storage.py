@@ -474,3 +474,138 @@ async def test_search_embeddings(temp_chroma, temp_db):
         paper_ids=[uuid.uuid4()],
     )
     assert len(results_empty) == 0
+
+
+@pytest.mark.anyio
+async def test_search_multiple_papers(temp_chroma, temp_db):
+    import uuid
+
+    from quantinsight.schemas.models import (
+        ChunkType,
+        CitedSummary,
+        PaperChunk,
+        SourcePaper,
+    )
+    from quantinsight.storage.chroma_store import save_embeddings, search
+    from quantinsight.storage.sqlite_store import (
+        save_paper_elements,
+        save_paper_metadata,
+    )
+
+    paper_a_id = uuid.uuid4()
+    paper_b_id = uuid.uuid4()
+
+    # Save metadata for both papers
+    paper_a = SourcePaper(
+        id=paper_a_id,
+        arxiv_id="2303.00001",
+        title="Paper A",
+        authors=["Author A"],
+        source_url="https://arxiv.org/abs/2303.00001",
+        ingested_at=datetime.now(UTC),
+        raw_markdown_path="/dummy/path/a.md",
+        page_count=5,
+    )
+    paper_b = SourcePaper(
+        id=paper_b_id,
+        arxiv_id="2303.00002",
+        title="Paper B",
+        authors=["Author B"],
+        source_url="https://arxiv.org/abs/2303.00002",
+        ingested_at=datetime.now(UTC),
+        raw_markdown_path="/dummy/path/b.md",
+        page_count=3,
+    )
+    save_paper_metadata(paper_a)
+    save_paper_metadata(paper_b)
+
+    # Chunks for Paper A
+    chunk_a = PaperChunk(
+        id=uuid.uuid4(),
+        paper_id=paper_a_id,
+        chunk_type=ChunkType.PROSE,
+        content="Alpha represents the first paper content.",
+        page_number=1,
+        section_title="Intro A",
+        order_index=0,
+    )
+    summary_a = CitedSummary(
+        id=uuid.uuid4(),
+        paper_id=paper_a_id,
+        summary="Summary A.",
+        key_claims=["Claim A"],
+        supporting_chunk_ids=[chunk_a.id],
+        model_used="gpt-4o",
+    )
+    save_paper_elements([chunk_a], [], [], [], summary_a)
+    await save_embeddings([chunk_a], [], [])
+
+    # Chunks for Paper B
+    chunk_b = PaperChunk(
+        id=uuid.uuid4(),
+        paper_id=paper_b_id,
+        chunk_type=ChunkType.PROSE,
+        content="Beta represents the second paper content.",
+        page_number=1,
+        section_title="Intro B",
+        order_index=0,
+    )
+    summary_b = CitedSummary(
+        id=uuid.uuid4(),
+        paper_id=paper_b_id,
+        summary="Summary B.",
+        key_claims=["Claim B"],
+        supporting_chunk_ids=[chunk_b.id],
+        model_used="gpt-4o",
+    )
+    save_paper_elements([chunk_b], [], [], [], summary_b)
+    await save_embeddings([chunk_b], [], [])
+
+    # Test 1: Search only Paper A
+    res_a = await search(
+        query="paper content",
+        paper_ids=[paper_a_id],
+    )
+    assert len(res_a) == 1
+    assert res_a[0].id == chunk_a.id
+
+    # Test 2: Search only Paper B
+    res_b = await search(
+        query="paper content",
+        paper_ids=[paper_b_id],
+    )
+    assert len(res_b) == 1
+    assert res_b[0].id == chunk_b.id
+
+    # Test 3: Search both Paper A and Paper B explicitly
+    res_both = await search(
+        query="paper content",
+        paper_ids=[paper_a_id, paper_b_id],
+        limit=5,
+    )
+    assert len(res_both) == 2
+    ids = {r.id for r in res_both}
+    assert chunk_a.id in ids
+    assert chunk_b.id in ids
+
+    # Test 4: Search all papers (empty paper_ids)
+    res_all_empty = await search(
+        query="paper content",
+        paper_ids=[],
+        limit=5,
+    )
+    assert len(res_all_empty) == 2
+    ids_empty = {r.id for r in res_all_empty}
+    assert chunk_a.id in ids_empty
+    assert chunk_b.id in ids_empty
+
+    # Test 5: Search all papers (None paper_ids)
+    res_all_none = await search(
+        query="paper content",
+        paper_ids=None,
+        limit=5,
+    )
+    assert len(res_all_none) == 2
+    ids_none = {r.id for r in res_all_none}
+    assert chunk_a.id in ids_none
+    assert chunk_b.id in ids_none
