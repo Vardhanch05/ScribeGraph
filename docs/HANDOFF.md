@@ -10,8 +10,8 @@
 
 - **Day:** Day 6
 - **Phase:** Phase 2 — Storage & Retrieval
-- **Last completed task:** Task 19 — Type-aware `search()`
-- **Next task up:** Task 20 — Multi-paper query support in `search()`
+- **Last completed task:** Task 20 — Multi-paper query support in `search()`
+- **Next task up:** Task 21 — Retrieval unit tests
 - **Blockers / open questions:** None
 
 ---
@@ -40,6 +40,7 @@
 | 2026-07-30 | 17 | 9230523 | feat(storage): setup SQLite schema and handle UUID json serialization in CitedSummary [task-17] | Set up database schema, enforced foreign keys with cascade on delete, and resolved UUID serialization issues |
 | 2026-08-05 | 18 | 4f9bd16 | feat(storage): implement embedding generation on ingest and verify via unit tests [task-18] | Added unit tests and verified ChromaDB embedding generation |
 | 2026-08-05 | 19 | e23ef84 | feat(storage): implement type-aware search routing based on chunk_types [task-19] | Implemented type-aware ChromaDB queries and SQLite object resolution |
+| 2026-08-05 | 20 | c29dd52 | feat(storage): implement multi-paper query support in search [task-20] | Added unit tests to verify search filtering by multiple papers and handling of empty paper lists |
 
 ---
 
