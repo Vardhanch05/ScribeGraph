@@ -43,6 +43,8 @@
 | 2026-08-05 | 20 | c29dd52 | feat(storage): implement multi-paper query support in search [task-20] | Added unit tests to verify search filtering by multiple papers and handling of empty paper lists |
 | 2026-08-06 | 21 | 76459de | test(storage): revise retrieval unit tests to cover type exclusion and context linkage [task-21] | Implemented comprehensive tests in tests/test_retrieval.py including hard exclusion type filtering, context linkage, no-match handling, and multi-paper filter boundaries. |
 | 2026-08-06 | 22 | 37a11ad | feat(ingestion): support fallback summary and ingest dev corpus [task-22] | Ingested dev corpus of 3 papers (Attention, ResNet, Adam) from arXiv, verified all chunk types represented in local SQLite and ChromaDB, and implemented a robust LLM-fallback mode for environment keys. |
+| 2026-08-06 | 23 | bb89980 | feat(retrieval): implement manual relevance spot-check script [task-23] | Created scripts/spot_check.py running 7 diverse queries across prose, table, and equation chunk types, printing detailed metadata (page, section, type, captions). |
+| 2026-08-06 | 24 | - | feat(retrieval): manual relevance check and tuning verification [task-24] | Inspected spot-check results; verified high relevance of matches with BAAI/bge-small-en-v1.5 embeddings and strict metadata routing. No retrieval tuning changes required. |
 
 ---
 
