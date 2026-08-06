@@ -8,10 +8,10 @@
 
 ## Current Status
 
-- **Day:** Day 6
+- **Day:** Day 7
 - **Phase:** Phase 2 — Storage & Retrieval
-- **Last completed task:** Task 20 — Multi-paper query support in `search()`
-- **Next task up:** Task 21 — Retrieval unit tests
+- **Last completed task:** Task 21 — Retrieval unit tests
+- **Next task up:** Task 22 — Ingest dev corpus (3–4 papers)
 - **Blockers / open questions:** None
 
 ---
@@ -41,6 +41,7 @@
 | 2026-08-05 | 18 | 4f9bd16 | feat(storage): implement embedding generation on ingest and verify via unit tests [task-18] | Added unit tests and verified ChromaDB embedding generation |
 | 2026-08-05 | 19 | e23ef84 | feat(storage): implement type-aware search routing based on chunk_types [task-19] | Implemented type-aware ChromaDB queries and SQLite object resolution |
 | 2026-08-05 | 20 | c29dd52 | feat(storage): implement multi-paper query support in search [task-20] | Added unit tests to verify search filtering by multiple papers and handling of empty paper lists |
+| 2026-08-06 | 21 | 61bdc30 | test(storage): write retrieval unit tests for type-aware routing and multi-paper query support [task-21] | Added tests/test_retrieval.py testing end-to-end ingestion/retrieval integration, type-aware routing, and multi-paper filtering. |
 
 ---
 
