@@ -42,6 +42,7 @@
 | 2026-08-05 | 19 | e23ef84 | feat(storage): implement type-aware search routing based on chunk_types [task-19] | Implemented type-aware ChromaDB queries and SQLite object resolution |
 | 2026-08-05 | 20 | c29dd52 | feat(storage): implement multi-paper query support in search [task-20] | Added unit tests to verify search filtering by multiple papers and handling of empty paper lists |
 | 2026-08-06 | 21 | 76459de | test(storage): revise retrieval unit tests to cover type exclusion and context linkage [task-21] | Implemented comprehensive tests in tests/test_retrieval.py including hard exclusion type filtering, context linkage, no-match handling, and multi-paper filter boundaries. |
+| 2026-08-06 | 22 | 37a11ad | feat(ingestion): support fallback summary and ingest dev corpus [task-22] | Ingested dev corpus of 3 papers (Attention, ResNet, Adam) from arXiv, verified all chunk types represented in local SQLite and ChromaDB, and implemented a robust LLM-fallback mode for environment keys. |
 
 ---
 
