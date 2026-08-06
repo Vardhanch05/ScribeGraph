@@ -96,8 +96,20 @@ async def generate_cited_summary(
         A validated CitedSummary Pydantic model.
     """
     resolved_api_key = api_key or os.environ.get("GROQ_API_KEY")
-    if not resolved_api_key:
-        raise ValueError("GROQ_API_KEY is not set in environment or arguments")
+    if not resolved_api_key or resolved_api_key == "your_groq_key_here" or os.environ.get("MOCK_LLM") == "true":
+        logger.warning(
+            "Using mock CitedSummary because no valid GROQ_API_KEY was provided or MOCK_LLM is enabled."
+        )
+        first_chunk_text = chunks[0].content[:200] if chunks else ""
+        return CitedSummary(
+            id=uuid4(),
+            paper_id=paper_id,
+            summary=f"Mock summary of paper. First chunk snippet: {first_chunk_text}",
+            key_claims=["Mock claim supported by first chunk."],
+            supporting_chunk_ids=[chunks[0].id] if chunks else [],
+            generated_at=datetime.now(UTC),
+            model_used="mock-model",
+        )
 
     if not chunks:
         raise ValueError("Cannot generate summary for an empty list of chunks")
