@@ -185,6 +185,9 @@ async def search(
     Routes queries to the appropriate collections based on chunk_types.
     If chunk_types is empty/None, searches all collections.
     """
+    if paper_ids is not None and not paper_ids:
+        return []
+
     from quantinsight.storage.sqlite_store import (
         get_chunk_by_id,
         get_equation_by_chunk_id,

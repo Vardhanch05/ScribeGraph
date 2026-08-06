@@ -588,16 +588,13 @@ async def test_search_multiple_papers(temp_chroma, temp_db):
     assert chunk_a.id in ids
     assert chunk_b.id in ids
 
-    # Test 4: Search all papers (empty paper_ids)
+    # Test 4: Search no papers (empty paper_ids)
     res_all_empty = await search(
         query="paper content",
         paper_ids=[],
         limit=5,
     )
-    assert len(res_all_empty) == 2
-    ids_empty = {r.id for r in res_all_empty}
-    assert chunk_a.id in ids_empty
-    assert chunk_b.id in ids_empty
+    assert len(res_all_empty) == 0
 
     # Test 5: Search all papers (None paper_ids)
     res_all_none = await search(
