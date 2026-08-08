@@ -40,7 +40,7 @@ async def main():
     parser.add_argument(
         "--model",
         type=str,
-        default="llama-3.1-70b-versatile",
+        default="llama-3.3-70b-versatile",
         help="Groq model name to use for CitedSummary generation",
     )
 

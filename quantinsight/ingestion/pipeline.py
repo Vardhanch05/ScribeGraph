@@ -30,7 +30,7 @@ async def ingest_paper(
     authors: list[str] | None = None,
     api_key: str | None = None,
     groq_api_key: str | None = None,
-    model: str = "llama-3.1-70b-versatile",
+    model: str = "llama-3.3-70b-versatile",
 ) -> tuple[UUID, list[str]]:
     """
     Orchestrate the ingestion pipeline:

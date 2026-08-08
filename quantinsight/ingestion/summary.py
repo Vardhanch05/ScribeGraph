@@ -80,7 +80,7 @@ async def generate_cited_summary(
     paper_id: UUID,
     chunks: list[PaperChunk],
     api_key: str | None = None,
-    model: str = "llama-3.1-70b-versatile",
+    model: str = "llama-3.3-70b-versatile",
 ) -> CitedSummary:
     """
     Generate a CitedSummary for a given paper by summarizing the text chunks using Groq,

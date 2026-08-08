@@ -1,5 +1,5 @@
 # App Flow & UI/UX Design
-## QuantInsight — Agentic Research & Context Engineering Framework
+## ScribeGraph — Agentic Research & Context Engineering Framework
 
 **Version:** 0.1 (Draft)
 **Scope:** Streamlit UI only (per project constraint — no HTML/CSS/JS/React)

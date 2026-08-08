@@ -1,16 +1,16 @@
 # AGENTS.md
-## QuantInsight — Agent & Repository Conventions
+## ScribeGraph — Agent & Repository Conventions
 
 This file serves two purposes:
 1. **Repo conventions for AI coding assistants** (e.g., Claude Code) working on this codebase.
-2. **Documentation of the LangGraph agent system itself** — the actual agents QuantInsight runs at query time.
+2. **Documentation of the LangGraph agent system itself** — the actual agents ScribeGraph runs at query time.
 
 ---
 
 ## Part A — Repository Conventions (for AI coding agents working on this repo)
 
 ### Project summary
-QuantInsight is a two-stage knowledge extraction and agentic retrieval framework for arXiv-style research papers. Stage 1 (ingestion) uses LlamaParse to preserve document structure; Stage 2 (retrieval) uses a stateful LangGraph agent with a self-correction loop. See `docs/01_PRD.md` and `docs/02_TRD.md` for full context before making non-trivial changes.
+ScribeGraph is a two-stage knowledge extraction and agentic retrieval framework for arXiv-style research papers. Stage 1 (ingestion) uses LlamaParse to preserve document structure; Stage 2 (retrieval) uses a stateful LangGraph agent with a self-correction loop. See `docs/01_PRD.md` and `docs/02_TRD.md` for full context before making non-trivial changes.
 
 ### Setup
 ```bash
@@ -55,7 +55,7 @@ uv run python quantinsight/eval/run_eval.py
 
 ## Part B — The LangGraph Agent System (documentation of runtime agents)
 
-QuantInsight's query-time reasoning is a single LangGraph graph with four functional roles. These are not separate deployable services — they're nodes in one stateful graph, sharing `GraphState` (see TRD §4.2).
+ScribeGraph's query-time reasoning is a single LangGraph graph with four functional roles. These are not separate deployable services — they're nodes in one stateful graph, sharing `GraphState` (see TRD §4.2).
 
 ### Agent: Planner
 - **Input:** user query, list of target `paper_ids`

@@ -19,7 +19,9 @@ dependencies = [
     "streamlit",
     "mcp",
     "sentence-transformers",
-    "groq"
+    "groq",
+    "langgraph-checkpoint-sqlite",
+    "aiosqlite"
 ]
 
 [project.optional-dependencies]

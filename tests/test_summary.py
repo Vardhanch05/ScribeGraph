@@ -75,7 +75,7 @@ async def test_generate_cited_summary_success(mock_call_groq):
     ]
     # Verify both chunk IDs are present and deduplicated
     assert set(summary.supporting_chunk_ids) == {chunk1.id, chunk2.id}
-    assert summary.model_used == "llama-3.1-70b-versatile"
+    assert summary.model_used == "llama-3.3-70b-versatile"
 
 
 @pytest.mark.anyio

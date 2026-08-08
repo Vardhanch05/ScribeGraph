@@ -1,6 +1,6 @@
-# QuantInsight: Agentic Research & Context Engineering Framework
+# ScribeGraph: Agentic Research & Context Engineering Framework
 
-QuantInsight is a state-of-the-art, two-stage technical document ingestion, retrieval, and agentic reasoning framework optimized for dense academic papers (such as arXiv PDFs). Rather than utilizing a traditional, flat-chunk "naive RAG" pipeline which fails on technical layouts, mathematical notation, and structured tables, QuantInsight parses, stores, and queries technical documents by preserving their original layouts, math context, and tabular structure. Queries are answered using a stateful, self-correcting agent loop orchestrated via LangGraph.
+ScribeGraph is a state-of-the-art, two-stage technical document ingestion, retrieval, and agentic reasoning framework optimized for dense academic papers (such as arXiv PDFs). Rather than utilizing a traditional, flat-chunk "naive RAG" pipeline which fails on technical layouts, mathematical notation, and structured tables, ScribeGraph parses, stores, and queries technical documents by preserving their original layouts, math context, and tabular structure. Queries are answered using a stateful, self-correcting agent loop orchestrated via LangGraph.
 
 ---
 
@@ -12,13 +12,13 @@ Standard vector Retrieval-Augmented Generation (RAG) systems fail on technical d
 3. **Tabular Data Destruction:** Multi-column results tables lose row/column associations when converted to simple plain text, preventing accurate lookup.
 4. **Citation Ignorance:** Citation hierarchies are invisible to flat-chunk retrievers, rendering the system unable to distinguish between a paper's own findings and the cited works of others.
 
-**QuantInsight** solves these challenges by treating technical PDFs as structured data rather than unstructured text blobs. It parses, segments, and stores documents as distinct semantic units and queries them using a self-correcting reflection loop.
+**ScribeGraph** solves these challenges by treating technical PDFs as structured data rather than unstructured text blobs. It parses, segments, and stores documents as distinct semantic units and queries them using a self-correcting reflection loop.
 
 ---
 
 ## 2. System Architecture
 
-QuantInsight operates in two primary stages: **Stage 1 (Structure-Preserving Ingestion & Extraction)** and **Stage 2 (Agentic Retrieval & Reasoning)**.
+ScribeGraph operates in two primary stages: **Stage 1 (Structure-Preserving Ingestion & Extraction)** and **Stage 2 (Agentic Retrieval & Reasoning)**.
 
 ```mermaid
 graph TD
@@ -65,7 +65,7 @@ graph TD
 
 ## 3. Technology Stack
 
-QuantInsight utilizes a curated stack prioritizing performance, local execution of lightweight components, and structured APIs:
+ScribeGraph utilizes a curated stack prioritizing performance, local execution of lightweight components, and structured APIs:
 
 | Layer | Component / Tool | Function / Trade-off |
 |---|---|---|
@@ -118,7 +118,7 @@ Ingestion is completely idempotent. If a paper is submitted that matches an exis
 
 ## 5. Stage 2: Storage & Relational Design
 
-QuantInsight stores structural data using a hybrid database architecture: relational metadata in SQLite and semantic vectors in ChromaDB.
+ScribeGraph stores structural data using a hybrid database architecture: relational metadata in SQLite and semantic vectors in ChromaDB.
 
 ```
                           ┌──────────────────────┐
@@ -139,7 +139,7 @@ QuantInsight stores structural data using a hybrid database architecture: relati
 ```
 
 ### 5.1 SQLite Relational Schema (`quantinsight/storage/sqlite_store.py`)
-Using `SQLModel`, QuantInsight creates several structured tables:
+Using `SQLModel`, ScribeGraph creates several structured tables:
 - **`source_papers`**: Stores paper details (`arxiv_id`, `title`, `authors`, `raw_markdown_path`, `page_count`).
 - **`paper_chunks`**: Stores individual text blocks. Includes `embedding_id` which acts as the join-key to ChromaDB vector documents.
 - **`table_units`**: Stores tables with JSON headers and row matrices. Linked via foreign key with `ON DELETE CASCADE` to both `source_papers` and `paper_chunks`.
@@ -148,7 +148,7 @@ Using `SQLModel`, QuantInsight creates several structured tables:
 - **`cited_summaries`**: Holds LLM-generated summaries and claims.
 
 ### 5.2 ChromaDB Collections (`quantinsight/storage/chroma_store.py`)
-Rather than keeping a single vector store, QuantInsight segments embeddings into three collections:
+Rather than keeping a single vector store, ScribeGraph segments embeddings into three collections:
 1. **`prose_chunks`**: Semantic vectors of textual sections.
 2. **`table_chunks`**: Generated from a synthesized table text representation: `Table caption: {caption}. Headers: {headers}.`
 3. **`equation_chunks`**: Generated from the formula and its context: `Equation: {latex}. Context: {context}.`
@@ -159,7 +159,7 @@ This partitioning allows Stage 2 retrieval to query only relevant subsets (e.g. 
 
 ## 6. Stage 3: The LangGraph Agent Loop
 
-QuantInsight leverages a multi-node state machine designed in LangGraph to handle retrieval and answer generation:
+ScribeGraph leverages a multi-node state machine designed in LangGraph to handle retrieval and answer generation:
 
 ```
         Planner
@@ -199,7 +199,7 @@ All nodes mutate a shared `GraphState` object:
 
 ## 7. Interfaces & API Layer
 
-QuantInsight provides three access interfaces to accommodate different development and user workflows.
+ScribeGraph provides three access interfaces to accommodate different development and user workflows.
 
 ### 7.1 FastAPI REST Layer (`quantinsight/api/main.py`)
 Exposes HTTP endpoints for standard API interactions:
@@ -210,7 +210,7 @@ Exposes HTTP endpoints for standard API interactions:
 - `POST /query/stream`: Establishes a Server-Sent Events (SSE) connection, streaming the execution trace (`AgentTraceStep` steps) in real-time to external clients.
 
 ### 7.2 Model Context Protocol Server (`quantinsight/mcp_server/server.py`)
-Implemented using the Model Context Protocol (FastMCP), this server exposes QuantInsight capabilities as standard tools to external LLM clients (such as Claude Desktop or custom developer systems):
+Implemented using the Model Context Protocol (FastMCP), this server exposes ScribeGraph capabilities as standard tools to external LLM clients (such as Claude Desktop or custom developer systems):
 - `search_papers(query, paper_ids)`: Performs semantic retrieval across collections.
 - `get_paper_summary(paper_id)`: Fetches SQLite summaries.
 - `get_equation_context(paper_id, equation_label)`: Queries specific formulas by label.
@@ -226,12 +226,12 @@ Implemented using the Model Context Protocol (FastMCP), this server exposes Quan
 
 ## 8. Evaluation Framework (RAGAS)
 
-QuantInsight evaluates context quality using a programmatic script (`quantinsight/eval/run_eval.py`):
+ScribeGraph evaluates context quality using a programmatic script (`quantinsight/eval/run_eval.py`):
 
 ```
                    Evaluation Pipeline
                    
-  Test Dataset        QuantInsight          RAGAS Evaluation       Output Report
+  Test Dataset        ScribeGraph          RAGAS Evaluation       Output Report
 (dataset.json) ──► Agent Execution ──► (Faithfulness, Precision) ──► results.md
 ```
 
@@ -255,7 +255,7 @@ To maintain clean and testable development, the framework enforces several codin
 ## 10. Repository Directory Structure
 
 ```
-QuantInsight/
+ScribeGraph/
 ├── .env.example                 # Environment configuration template
 ├── .gitignore                   # File exclusions
 ├── .pre-commit-config.yaml      # Formatting/Linting pre-commit hooks

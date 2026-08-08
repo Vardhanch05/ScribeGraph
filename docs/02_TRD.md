@@ -1,5 +1,5 @@
 # Technical Requirements Document (TRD)
-## QuantInsight — Agentic Research & Context Engineering Framework
+## ScribeGraph — Agentic Research & Context Engineering Framework
 
 **Version:** 0.1 (Draft)
 **Companion to:** 01_PRD.md

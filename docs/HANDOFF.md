@@ -1,4 +1,4 @@
-# HANDOFF.md — QuantInsight Session Log
+# HANDOFF.md — ScribeGraph Session Log
 
 **Purpose:** Antigravity's agent context may not persist between sessions. This file is the single source of truth for "where we left off" — read it at the start of every session, update it at the end of every session, before every commit round.
 

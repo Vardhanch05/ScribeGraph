@@ -11,6 +11,7 @@ from tenacity import (
 )
 
 from quantinsight.schemas.models import (
+    AgentTraceStep,
     ChunkType,
     Citation,
     CitedSummary,
@@ -117,6 +118,19 @@ class CitedSummaryDb(SQLModel, table=True):
     supporting_chunk_ids: list[str] = Field(sa_column=Column(JSON))
     generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     model_used: str
+
+
+class AgentTraceStepDb(SQLModel, table=True):
+    __tablename__ = "agent_traces"
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    query_id: UUID = Field(index=True)
+    step_index: int
+    node_name: str
+    input_summary: str
+    output_summary: str
+    tool_calls: list[dict] = Field(sa_column=Column(JSON))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 # Database initialization
@@ -465,3 +479,62 @@ def get_equation_by_chunk_id(chunk_id: UUID) -> EquationUnit | None:
                 page_number=db_eq.page_number,
             )
     return None
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=0.5, min=1, max=5),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def save_agent_trace(query_id: UUID, trace: list[AgentTraceStep]) -> None:
+    """Save the agent trace steps for a given query_id."""
+    with Session(engine) as session:
+        # First clean up any existing trace for this query_id to ensure idempotency
+        existing = session.exec(
+            select(AgentTraceStepDb).where(AgentTraceStepDb.query_id == query_id)
+        ).all()
+        for step in existing:
+            session.delete(step)
+        session.flush()
+
+        for step in trace:
+            db_step = AgentTraceStepDb(
+                query_id=query_id,
+                step_index=step.step_index,
+                node_name=step.node_name,
+                input_summary=step.input_summary,
+                output_summary=step.output_summary,
+                tool_calls=step.tool_calls,
+                timestamp=step.timestamp,
+            )
+            session.add(db_step)
+        session.commit()
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=0.5, min=1, max=5),
+    retry=retry_if_exception_type(Exception),
+    reraise=True,
+)
+def get_agent_trace(query_id: UUID) -> list[AgentTraceStep]:
+    """Retrieve the agent trace steps for a given query_id, ordered by step_index."""
+    with Session(engine) as session:
+        statement = (
+            select(AgentTraceStepDb)
+            .where(AgentTraceStepDb.query_id == query_id)
+            .order_by(AgentTraceStepDb.step_index)
+        )
+        db_steps = session.exec(statement).all()
+        return [
+            AgentTraceStep(
+                step_index=db_step.step_index,
+                node_name=db_step.node_name,
+                input_summary=db_step.input_summary,
+                output_summary=db_step.output_summary,
+                tool_calls=db_step.tool_calls,
+                timestamp=db_step.timestamp,
+            )
+            for db_step in db_steps
+        ]

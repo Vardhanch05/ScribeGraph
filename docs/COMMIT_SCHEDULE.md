@@ -1,4 +1,4 @@
-# 21-Day Commit Schedule — QuantInsight
+# 21-Day Commit Schedule — ScribeGraph
 
 Goal: 3 commits/day, 7 days/week, 21 days straight = **63 commits**, matching the 63 tasks in `.kiro/specs/quantinsight-core/tasks.md` 1:1. Each day's three commits = one meaningful, working, testable unit of progress — not padding.
 

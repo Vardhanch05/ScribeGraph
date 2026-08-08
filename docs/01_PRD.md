@@ -1,5 +1,5 @@
 # Product Requirements Document (PRD)
-## QuantInsight — Agentic Research & Context Engineering Framework
+## ScribeGraph — Agentic Research & Context Engineering Framework
 *(working title — naming TBD)*
 
 **Version:** 0.1 (Draft)
@@ -83,7 +83,7 @@ Because this is a portfolio project, "success" = demonstrable, measurable qualit
 - *As a researcher*, I want to ask "what assumption does Theorem 2 rely on?" and get an answer that correctly quotes the equation, not a paraphrase that drops a variable.
 - *As a researcher*, I want to compare claims across two papers ("do these two papers agree on the sample complexity bound?") and see where they diverge.
 - *As an interviewer*, I want to watch the agent's execution trace live to understand *how* it reasoned, not just see a final answer.
-- *As an external developer*, I want to call QuantInsight's retrieval function as an MCP tool from my own agent without needing its UI.
+- *As an external developer*, I want to call ScribeGraph's retrieval function as an MCP tool from my own agent without needing its UI.
 
 ## 8. Constraints & Assumptions
 

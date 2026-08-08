@@ -1,5 +1,5 @@
 # Implementation Plan
-## QuantInsight — Agentic Research & Context Engineering Framework
+## ScribeGraph — Agentic Research & Context Engineering Framework
 
 **Version:** 0.1 (Draft)
 **Timeline:** 6–8 weeks, part-time solo build
