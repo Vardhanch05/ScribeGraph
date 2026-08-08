@@ -8,10 +8,10 @@
 
 ## Current Status
 
-- **Day:** Day 7
-- **Phase:** Phase 2 — Storage & Retrieval
-- **Last completed task:** Task 21 — Retrieval unit tests
-- **Next task up:** Task 22 — Ingest dev corpus (3–4 papers)
+- **Day:** Day 13
+- **Phase:** Phase 3 — Agent Loop & Reasoning
+- **Last completed task:** Task 37 — Revision-loop test case
+- **Next task up:** Task 38 — `scripts/query.py` CLI + validation
 - **Blockers / open questions:** None
 
 ---
@@ -45,6 +45,7 @@
 | 2026-08-06 | 22 | 37a11ad | feat(ingestion): support fallback summary and ingest dev corpus [task-22] | Ingested dev corpus of 3 papers (Attention, ResNet, Adam) from arXiv, verified all chunk types represented in local SQLite and ChromaDB, and implemented a robust LLM-fallback mode for environment keys. |
 | 2026-08-06 | 23 | bb89980 | feat(retrieval): implement manual relevance spot-check script [task-23] | Created scripts/spot_check.py running 7 diverse queries across prose, table, and equation chunk types, printing detailed metadata (page, section, type, captions). |
 | 2026-08-06 | 24 | - | feat(retrieval): manual relevance check and tuning verification [task-24] | Inspected spot-check results; verified high relevance of matches with BAAI/bge-small-en-v1.5 embeddings and strict metadata routing. No retrieval tuning changes required. |
+| 2026-08-08 | 25-37 | 312fb79 | Implement ScribeGraph LangGraph agent loop, SQLite checkpointing, unit tests, and documentation rename | Implemented complete LangGraph agent loop (Planner, Retriever, Synthesizer, Verifier nodes), conditional edge routing, AsyncSqliteSaver checkpointer, 5-question test suite including revision loop validation, and renamed project references to ScribeGraph. |
 
 ---
 
