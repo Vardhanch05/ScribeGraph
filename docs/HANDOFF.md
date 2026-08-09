@@ -10,8 +10,8 @@
 
 - **Day:** Day 13
 - **Phase:** Phase 3 — Agent Loop & Reasoning
-- **Last completed task:** Task 38 — `scripts/query.py` CLI + validation
-- **Next task up:** Task 39 — Prompt tuning + failure-mode docs
+- **Last completed task:** Task 39 — Prompt tuning + failure-mode docs
+- **Next task up:** Task 40 — FastAPI app skeleton (Phase 4 Transition)
 - **Blockers / open questions:** None
 
 ---
@@ -47,6 +47,7 @@
 | 2026-08-06 | 24 | - | feat(retrieval): manual relevance check and tuning verification [task-24] | Inspected spot-check results; verified high relevance of matches with BAAI/bge-small-en-v1.5 embeddings and strict metadata routing. No retrieval tuning changes required. |
 | 2026-08-08 | 25-37 | 312fb79 | Implement ScribeGraph LangGraph agent loop, SQLite checkpointing, unit tests, and documentation rename | Implemented complete LangGraph agent loop (Planner, Retriever, Synthesizer, Verifier nodes), conditional edge routing, AsyncSqliteSaver checkpointer, 5-question test suite including revision loop validation, and renamed project references to ScribeGraph. |
 | 2026-08-09 | 38 | e459d23 | feat(agent): implement scripts/query.py CLI and validate end-to-end [task-38] | Created query CLI to execute LangGraph agent on user questions, with trace output and citation details. |
+| 2026-08-09 | 39 | b06a879 | feat(agent): perform prompt tuning and implement edge case testing [task-39] | Tuned Synthesizer & Verifier prompts to handle irrelevant/empty evidence and prevent false revision loops; added unit tests. |
 
 ---
 
@@ -57,9 +58,17 @@
 | Date | Decision | Why | Affects |
 |---|---|---|---|
 | 2026-07-25 | Pivoted from OpenAI to Groq-only LLM (`GROQ_API_KEY`) + local `sentence-transformers` (`BAAI/bge-small-en-v1.5`) | Avoid API embedding costs and leverage Groq's high speed for LLM reasoning | Tasks 12, 16, 18, 26, 28, 29, 59 |
-
-*Example entry:*
 | 2026-08-02 | Switched equation extraction confidence threshold from 0.8 to 0.6 | LlamaParse under-flagged valid equations at 0.8, causing false low-confidence markers | Task 11 (`ingestion/segmenter.py`) |
+| 2026-08-09 | Tuned Synthesizer and Verifier prompts for edge cases | Handled negative search results (no evidence) in the Synthesizer and instructed the Verifier to accept honest negative answers instead of triggering infinite revision loops. | Task 39 (`quantinsight/agent/nodes/`) |
+
+---
+
+## Prompt Tuning & Failure Modes
+
+During Task 39, we analyzed potential failure modes in stateful LLM routing and tuned our agent prompts to mitigate them:
+1. **Empty Retrieval / Irrelevant Evidence:** If a query yields irrelevant chunks or empty vector retrieval, the Synthesizer was prone to hallucinate an answer. We tuned the Synthesizer prompt to return a standard "No supporting evidence found" message and leave the `citations` list empty in such cases.
+2. **Infinite Revision Loops:** If the Synthesizer correctly declared "no evidence found" (with no citations), the Verifier criteria originally flagged any claim without citations as a failure, leading to redundant revision loop passes. We updated the Verifier system instructions to allow honest negative responses to bypass revision if they correctly state that no supporting evidence is present.
+3. **Edge Case Tests:** Created two new async integration tests (`test_agent_ambiguous_query` and `test_agent_multipaper_comparison`) in `tests/test_agent_graph.py` to ensure robust handling of ambiguous/general queries and multi-paper routing plan validation under mock LLM execution.
 
 ---
 
