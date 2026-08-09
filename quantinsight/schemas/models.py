@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, model_validator
@@ -98,3 +99,29 @@ class QueryResponse(BaseModel):
     trace: list[AgentTraceStep]
     self_correction_applied: bool
     confidence_note: str | None = None
+
+
+class ErrorDetail(BaseModel):
+    code: str
+    message: str
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class ErrorResponse(BaseModel):
+    error: ErrorDetail
+
+
+class IngestResponse(BaseModel):
+    paper_id: UUID
+    status: str
+    warnings: list[str] = Field(default_factory=list)
+
+
+class PaperDetailResponse(BaseModel):
+    paper: SourcePaper
+    summary: CitedSummary | None = None
+
+
+class QueryRequest(BaseModel):
+    query: str
+    paper_ids: list[UUID] = Field(default_factory=list)
