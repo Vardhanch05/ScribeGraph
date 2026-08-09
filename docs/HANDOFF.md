@@ -10,8 +10,8 @@
 
 - **Day:** Day 13
 - **Phase:** Phase 3 — Agent Loop & Reasoning
-- **Last completed task:** Task 37 — Revision-loop test case
-- **Next task up:** Task 38 — `scripts/query.py` CLI + validation
+- **Last completed task:** Task 38 — `scripts/query.py` CLI + validation
+- **Next task up:** Task 39 — Prompt tuning + failure-mode docs
 - **Blockers / open questions:** None
 
 ---
@@ -46,6 +46,7 @@
 | 2026-08-06 | 23 | bb89980 | feat(retrieval): implement manual relevance spot-check script [task-23] | Created scripts/spot_check.py running 7 diverse queries across prose, table, and equation chunk types, printing detailed metadata (page, section, type, captions). |
 | 2026-08-06 | 24 | - | feat(retrieval): manual relevance check and tuning verification [task-24] | Inspected spot-check results; verified high relevance of matches with BAAI/bge-small-en-v1.5 embeddings and strict metadata routing. No retrieval tuning changes required. |
 | 2026-08-08 | 25-37 | 312fb79 | Implement ScribeGraph LangGraph agent loop, SQLite checkpointing, unit tests, and documentation rename | Implemented complete LangGraph agent loop (Planner, Retriever, Synthesizer, Verifier nodes), conditional edge routing, AsyncSqliteSaver checkpointer, 5-question test suite including revision loop validation, and renamed project references to ScribeGraph. |
+| 2026-08-09 | 38 | e459d23 | feat(agent): implement scripts/query.py CLI and validate end-to-end [task-38] | Created query CLI to execute LangGraph agent on user questions, with trace output and citation details. |
 
 ---
 
