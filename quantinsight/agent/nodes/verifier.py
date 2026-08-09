@@ -73,7 +73,8 @@ async def verifier_node(state: GraphState | dict[str, Any]) -> dict[str, Any]:
         "1. Is every factual claim, number, or equation in the draft answer fully supported by the provided evidence?\n"
         "2. Are there any contradictions or unsupported extrapolations between the draft answer and the evidence?\n"
         "3. Does the draft answer correctly cite the supporting chunk IDs using the format [UUID]?\n"
-        "4. Are there any claims without any citations?\n\n"
+        "4. Are there any claims without any citations?\n"
+        "5. If the draft answer correctly states that no supporting evidence was found (and thus contains no citations), and the evidence indeed does not support the query, then this is correct. In this case, 'needs_revision' MUST be false.\n\n"
         "You MUST respond ONLY with a JSON object matching this schema:\n"
         "{\n"
         '  "needs_revision": boolean,\n'

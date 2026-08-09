@@ -266,3 +266,59 @@ async def test_agent_revision_loop(temp_chroma, temp_db, mock_ingestion_setup):
     assert state.values.get("needs_revision") is False
     assert state.values.get("final_answer") is not None
     assert state.values.get("final_answer").answer == response.answer
+
+
+@pytest.mark.anyio
+async def test_agent_ambiguous_query(temp_chroma, temp_db, mock_ingestion_setup):
+    # Ingest one paper
+    markdown_content = "# Ambiguous Paper\nThis contains general information about machine learning systems."
+    mock_ingestion_setup(markdown_content)
+    paper_id, _ = await ingest_paper(
+        arxiv_id="2303.55555",
+        title="Paper E",
+        authors=["Author E"],
+        api_key="mock_key",
+        groq_api_key="mock_key",
+    )
+    # Ambiguous query
+    query = "What is it?"
+    response = await run_agent(query, paper_ids=[paper_id])
+    assert response.answer is not None
+    assert "Mock draft answer" in response.answer or "Fallback" in response.answer
+
+
+@pytest.mark.anyio
+async def test_agent_multipaper_comparison(temp_chroma, temp_db, mock_ingestion_setup):
+    # Ingest two papers
+    markdown_content_1 = "# ResNet Paper\nResidual learning is deep and stable."
+    markdown_content_2 = "# Attention Paper\nAttention is all you need for sequence models."
+
+    mock_parse, mock_summary = mock_ingestion_setup(markdown_content_1)
+    paper_id_1, _ = await ingest_paper(
+        arxiv_id="2303.66666",
+        title="Paper F",
+        authors=["Author F"],
+        api_key="mock_key",
+        groq_api_key="mock_key",
+    )
+
+    # We must patch mock_parse's return value to return the second paper's markdown on the second ingest
+    mock_parse.return_value = markdown_content_2
+    paper_id_2, _ = await ingest_paper(
+        arxiv_id="2303.77777",
+        title="Paper G",
+        authors=["Author G"],
+        api_key="mock_key",
+        groq_api_key="mock_key",
+    )
+
+    # Comparison query across both papers
+    query = "Compare ResNet and Attention."
+    response = await run_agent(query, paper_ids=[paper_id_1, paper_id_2])
+
+    assert response.answer is not None
+    # Verify that multi-hop was correctly set
+    planner_step = response.trace[0]
+    assert planner_step.node_name == "Planner"
+    assert "Is Multihop: True" in planner_step.output_summary
+

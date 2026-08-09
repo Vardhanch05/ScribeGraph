@@ -194,7 +194,8 @@ async def synthesizer_node(state: GraphState | dict[str, Any]) -> dict[str, Any]
         "   Example: 'ResNet-50 achieves 76% top-1 accuracy [12345678-abcd-1234-abcd-1234567890ab].'\n"
         "3. Keep equations in LaTeX form, e.g. $$E = mc^2$$ or inline $E = mc^2$. Do not flatten them.\n"
         "4. Render tables as structured markdown tables. Do not flatten them.\n"
-        "5. If a previous draft and verification notes (critique) are provided, you MUST revise the draft to address all the verification notes, correcting any errors or unsupported statements.\n\n"
+        "5. If the provided evidence is not relevant or does not contain the information needed to answer the user query, your answer MUST state that no supporting evidence was found, and the citations list MUST be empty.\n"
+        "6. If a previous draft and verification notes (critique) are provided, you MUST revise the draft to address all the verification notes, correcting any errors or unsupported statements.\n\n"
         "You MUST respond ONLY with a JSON object matching this schema:\n"
         "{\n"
         '  "answer": "your detailed draft answer with inline citations",\n'
