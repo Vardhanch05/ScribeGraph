@@ -9,9 +9,9 @@
 ## Current Status
 
 - **Day:** Day 13
-- **Phase:** Phase 3 — Agent Loop & Reasoning
-- **Last completed task:** Task 39 — Prompt tuning + failure-mode docs
-- **Next task up:** Task 40 — FastAPI app skeleton (Phase 4 Transition)
+- **Phase:** Phase 4 — API Layer
+- **Last completed task:** Task 40 — FastAPI app skeleton (Phase 4 Transition)
+- **Next task up:** Task 41 — `/ingest` and `/ingest/{paper_id}/status` endpoints
 - **Blockers / open questions:** None
 
 ---
@@ -48,6 +48,7 @@
 | 2026-08-08 | 25-37 | 312fb79 | Implement ScribeGraph LangGraph agent loop, SQLite checkpointing, unit tests, and documentation rename | Implemented complete LangGraph agent loop (Planner, Retriever, Synthesizer, Verifier nodes), conditional edge routing, AsyncSqliteSaver checkpointer, 5-question test suite including revision loop validation, and renamed project references to ScribeGraph. |
 | 2026-08-09 | 38 | e459d23 | feat(agent): implement scripts/query.py CLI and validate end-to-end [task-38] | Created query CLI to execute LangGraph agent on user questions, with trace output and citation details. |
 | 2026-08-09 | 39 | b06a879 | feat(agent): perform prompt tuning and implement edge case testing [task-39] | Tuned Synthesizer & Verifier prompts to handle irrelevant/empty evidence and prevent false revision loops; added unit tests. |
+| 2026-08-09 | 40 | 7f62e7a | feat(api): implement FastAPI skeleton with structured error handlers [task-40] | Initialized FastAPI application skeleton, added structured error middleware, and wrote comprehensive test client unit tests. |
 
 ---
 
@@ -60,6 +61,7 @@
 | 2026-07-25 | Pivoted from OpenAI to Groq-only LLM (`GROQ_API_KEY`) + local `sentence-transformers` (`BAAI/bge-small-en-v1.5`) | Avoid API embedding costs and leverage Groq's high speed for LLM reasoning | Tasks 12, 16, 18, 26, 28, 29, 59 |
 | 2026-08-02 | Switched equation extraction confidence threshold from 0.8 to 0.6 | LlamaParse under-flagged valid equations at 0.8, causing false low-confidence markers | Task 11 (`ingestion/segmenter.py`) |
 | 2026-08-09 | Tuned Synthesizer and Verifier prompts for edge cases | Handled negative search results (no evidence) in the Synthesizer and instructed the Verifier to accept honest negative answers instead of triggering infinite revision loops. | Task 39 (`quantinsight/agent/nodes/`) |
+| 2026-08-09 | Structured API error handlers in FastAPI skeleton | Ensure no raw python tracebacks propagate to clients, sending unified schema-validated JSON error objects instead. | Task 40 (`quantinsight/api/main.py`) |
 
 ---
 
