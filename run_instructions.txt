@@ -1,0 +1,25 @@
+Virtual Environment Activation (PowerShell):
+.\venv\Scripts\Activate.ps1
+
+Here are the commands to run both the Backend API and the Frontend UI:
+
+1. 🚀 Run Backend API (FastAPI)
+Open a terminal in the project root (QuantInsight) and run:
+
+powershell
+uv run uvicorn quantinsight.api.main:app --reload --port 8000
+API Base URL: http://localhost:8000
+Interactive Swagger Docs: http://localhost:8000/docs
+
+2. 🎨 Run Frontend UI (Streamlit)
+Open a second terminal in the project root (QuantInsight) and run:
+
+powershell
+uv run streamlit run app/Home.py
+Frontend Application URL: http://localhost:8501
+
+🔌 (Optional) Run MCP Server (FastMCP)
+If using ScribeGraph as an MCP Server with Claude Desktop, Cursor, or Windsurf:
+
+powershell
+uv run python -m quantinsight.mcp_server.server
