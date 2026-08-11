@@ -114,13 +114,21 @@ async def generate_cited_summary(
     if not chunks:
         raise ValueError("Cannot generate summary for an empty list of chunks")
 
-    # Format chunks with IDs for context
+    # Limit chunk text length to ~28,000 chars (~7,000 tokens) to respect Groq 12,000 TPM limit
     formatted_chunks = []
+    current_chars = 0
+    max_chars = 28000
+
     for chunk in chunks:
-        formatted_chunks.append(
-            f"=== CHUNK ID: {chunk.id} (Page {chunk.page_number}) ===\n{chunk.content}"
-        )
-    chunks_text = "\n\n".join(formatted_chunks)
+        chunk_str = f"=== CHUNK ID: {chunk.id} (Page {chunk.page_number}) ===\n{chunk.content}\n\n"
+        if current_chars + len(chunk_str) > max_chars:
+            if formatted_chunks:
+                break
+            chunk_str = chunk_str[:max_chars]
+        formatted_chunks.append(chunk_str)
+        current_chars += len(chunk_str)
+
+    chunks_text = "".join(formatted_chunks)
 
     system_prompt = (
         "You are a professional research analysis assistant. Analyze the provided paper content "
@@ -149,8 +157,21 @@ async def generate_cited_summary(
     try:
         raw_response = await _call_groq_chat_completion(client, model, messages)
     except Exception as e:
-        logger.error(f"Failed to generate cited summary via Groq: {e}")
-        raise RuntimeError(f"Groq API call failed: {e}") from e
+        err_msg = str(e).lower()
+        if "413" in err_msg or "rate_limit" in err_msg or "tokens per minute" in err_msg:
+            logger.warning("Groq TPM limit reached for 70b model. Falling back to llama-3.1-8b-instant...")
+            try:
+                raw_response = await _call_groq_chat_completion(
+                    client, "llama-3.1-8b-instant", messages
+                )
+                model = "llama-3.1-8b-instant"
+            except Exception as fallback_err:
+                logger.error(f"Fallback model also failed: {fallback_err}")
+                raise RuntimeError(f"Groq API call failed: {fallback_err}") from fallback_err
+        else:
+            logger.error(f"Failed to generate cited summary via Groq: {e}")
+            raise RuntimeError(f"Groq API call failed: {e}") from e
+
 
     try:
         data = extract_json(raw_response)
