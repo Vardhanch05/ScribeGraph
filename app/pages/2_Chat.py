@@ -72,7 +72,7 @@ selected_paper_labels = st.sidebar.multiselect(
     default=[k for k, v in paper_map.items() if v in st.session_state.get("selected_paper_ids", [])],
 )
 
-selected_ids = [UUID(paper_map[label]) for label in selected_paper_labels]
+selected_ids = [UUID(paper_map[label]) for label in selected_paper_labels] if selected_paper_labels else None
 
 # Layout setup: 65% Chat, 35% Execution Trace
 chat_col, trace_col = st.columns([65, 35])

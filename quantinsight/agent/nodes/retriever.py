@@ -132,10 +132,11 @@ async def retriever_node(state: GraphState | dict[str, Any]) -> dict[str, Any]:
         try:
             results = await search(
                 query=step_query,
-                paper_ids=paper_ids,
+                paper_ids=paper_ids if paper_ids else None,
                 chunk_types=step_types,
                 limit=5,
             )
+
 
             # Categorize search results
             for item in results:
