@@ -84,6 +84,12 @@ def create_app() -> FastAPI:
         )
 
     # Routes
+    from quantinsight.api.routes.ingest import router as ingest_router
+    from quantinsight.api.routes.papers import router as papers_router
+
+    app.include_router(ingest_router)
+    app.include_router(papers_router)
+
     @app.get("/", tags=["General"])
     async def root():
         return {

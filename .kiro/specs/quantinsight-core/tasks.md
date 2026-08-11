@@ -233,12 +233,12 @@
   - All request/response models reference schemas from `quantinsight/schemas/`
   - Relevant requirements: FR-13, NFR-2, NFR-3
 
-- [ ] 41. Implement `/ingest` and `/ingest/{paper_id}/status` endpoints
+- [x] 41. Implement `/ingest` and `/ingest/{paper_id}/status` endpoints
   - `POST /ingest`: accepts `arxiv_id` or `UploadFile`; triggers ingestion pipeline; returns `{paper_id: UUID}`
   - `GET /ingest/{paper_id}/status`: returns status string + `SourcePaper` if complete
   - Relevant requirements: FR-1, FR-13
 
-- [ ] 42. Implement `/papers` and `/papers/{paper_id}` endpoints
+- [x] 42. Implement `/papers` and `/papers/{paper_id}` endpoints
   - `GET /papers`: list all `SourcePaper` records
   - `GET /papers/{paper_id}`: return `SourcePaper` + `CitedSummary`
   - Relevant requirements: FR-13
