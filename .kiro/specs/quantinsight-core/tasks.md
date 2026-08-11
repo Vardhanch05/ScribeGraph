@@ -278,12 +278,12 @@
 
 ## Phase 6 — Streamlit UI
 
-- [ ] 49. Implement Home / Paper Library page (`app/Home.py`)
+- [x] 49. Implement Home / Paper Library page (`app/Home.py`)
   - Table of ingested papers: title, authors, arXiv ID, ingestion date, chunk counts
   - "Chat about this paper" button per row; empty-state CTA linking to Ingest page
   - Relevant requirements: FR-11
 
-- [ ] 50. Implement Ingest page with status and error UX (`app/pages/1_Ingest.py`)
+- [x] 50. Implement Ingest page with status and error UX (`app/pages/1_Ingest.py`)
   - arXiv ID text input and PDF file uploader
   - `st.status()` block with live substeps on submission
   - On completion: structured preview card with chunk/table/equation counts
