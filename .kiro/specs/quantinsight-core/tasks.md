@@ -290,18 +290,18 @@
   - Explicit warning banner on partial parse failure — never silent
   - Relevant requirements: FR-1, FR-11
 
-- [ ] 51. Implement Chat page skeleton (`app/pages/2_Chat.py`)
+- [x] 51. Implement Chat page skeleton (`app/pages/2_Chat.py`)
   - Two-column layout: chat (65%) + trace panel (35%)
   - Paper multiselect, `st.chat_input`, `st.chat_message` history
   - Relevant requirements: FR-11, FR-12
 
-- [ ] 52. Wire Chat page to in-process LangGraph streaming
+- [x] 52. Wire Chat page to in-process LangGraph streaming
   - Import LangGraph runnable directly; stream via `.stream()` / `.astream_events()`
   - Write incremental trace steps to `st.session_state` as they arrive
   - Does NOT call `/query/stream` FastAPI endpoint
   - Relevant requirements: FR-12, NFR-4
 
-- [ ] 53. Implement equation/table rendering and revision badge
+- [x] 53. Implement equation/table rendering and revision badge
   - Equations: `st.latex()` by default; fallback to third-party KaTeX component only if needed
   - Tables: `st.dataframe()` or `st.table()` — never raw markdown
   - Show "⚠ Answer revised after verification" badge when `self_correction_applied=True`
