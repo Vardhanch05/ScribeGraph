@@ -270,7 +270,7 @@
   - `ask_quantinsight(query, paper_ids)` delegates to full agent graph; returns `QueryResponse`
   - Relevant requirements: FR-14
 
-- [ ] 48. Validate MCP server with external client and document tool schemas
+- [x] 48. Validate MCP server with external client and document tool schemas
   - Test all four tools with an MCP-compatible client (e.g., Claude Desktop)
   - Confirm tools are discoverable and return valid typed responses
   - Add MCP usage documentation to README
