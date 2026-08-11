@@ -462,6 +462,25 @@ def get_table_by_chunk_id(chunk_id: UUID) -> TableUnit | None:
     return None
 
 
+def get_equations_by_paper(paper_id: UUID) -> list[EquationUnit]:
+    """Retrieve all EquationUnits for a given paper_id."""
+    with Session(engine) as session:
+        statement = select(EquationUnitDb).where(EquationUnitDb.paper_id == paper_id)
+        db_eqs = session.exec(statement).all()
+        return [
+            EquationUnit(
+                id=db_eq.id,
+                paper_id=db_eq.paper_id,
+                chunk_id=db_eq.chunk_id,
+                latex=db_eq.latex,
+                surrounding_context=db_eq.surrounding_context,
+                equation_label=db_eq.equation_label,
+                page_number=db_eq.page_number,
+            )
+            for db_eq in db_eqs
+        ]
+
+
 def get_equation_by_chunk_id(chunk_id: UUID) -> EquationUnit | None:
     """Retrieve an EquationUnit by its chunk UUID from SQLite."""
     with Session(engine) as session:
@@ -479,6 +498,7 @@ def get_equation_by_chunk_id(chunk_id: UUID) -> EquationUnit | None:
                 page_number=db_eq.page_number,
             )
     return None
+
 
 
 @retry(

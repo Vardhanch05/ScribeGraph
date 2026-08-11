@@ -259,13 +259,13 @@
 
 ## Phase 5 — MCP Server
 
-- [ ] 46. Implement `search_papers` and `get_paper_summary` MCP tools
+- [x] 46. Implement `search_papers` and `get_paper_summary` MCP tools
   - FastMCP server in `mcp_server/server.py`
   - `search_papers(query, paper_ids)` reuses `storage/chroma_store.py` search — no duplicated logic
   - `get_paper_summary(paper_id)` reads from SQLite `cited_summaries` table
   - Relevant requirements: FR-14
 
-- [ ] 47. Implement `get_equation_context` and `ask_quantinsight` MCP tools
+- [x] 47. Implement `get_equation_context` and `ask_quantinsight` MCP tools
   - `get_equation_context(paper_id, equation_label)` looks up `EquationUnit` by label
   - `ask_quantinsight(query, paper_ids)` delegates to full agent graph; returns `QueryResponse`
   - Relevant requirements: FR-14
