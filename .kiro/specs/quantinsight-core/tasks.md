@@ -308,24 +308,24 @@
   - Expandable citations footer per answer
   - Relevant requirements: FR-11, FR-12
 
-- [ ] 54. Implement Paper Explorer page (`app/pages/3_Paper_Explorer.py`)
+- [x] 54. Implement Paper Explorer page (`app/pages/3_Paper_Explorer.py`)
   - Left sidebar: paper selector + section/page navigator
   - Tabs: Prose, Equations, Tables, Summary
   - Equations rendered with `st.latex()`; tables as `st.dataframe()`; summary claims link to supporting chunks
   - Relevant requirements: FR-11
 
-- [ ] 55. Implement Eval Dashboard skeleton (`app/pages/4_Eval_Dashboard.py`)
+- [x] 55. Implement Eval Dashboard skeleton (`app/pages/4_Eval_Dashboard.py`)
   - "Run evaluation" button triggering `/eval/run`
   - Results table: per-question RAGAS scores
   - Aggregate scores vs. target thresholds with pass/fail coloring
   - Relevant requirements: FR-15
 
-- [ ] 56. Full manual walkthrough and fixes
+- [x] 56. Full manual walkthrough and fixes
   - Ingest a new paper, ask a question, watch the trace, browse Paper Explorer, run eval — all through UI
   - Fix any integration issues found
   - Relevant requirements: FR-11, FR-12, FR-13, FR-14, FR-15
 
-- [ ] 57. Polish empty/loading/error states across all UI pages
+- [x] 57. Polish empty/loading/error states across all UI pages
   - Every page handles: loading state, empty state, error state explicitly
   - No silent failures or blank screens
   - Relevant requirements: FR-11, NFR-3
