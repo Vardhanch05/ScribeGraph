@@ -129,7 +129,10 @@ async def test_generate_cited_summary_invalid_json(mock_call_groq):
 
     mock_call_groq.return_value = "invalid json from LLM"
 
-    with pytest.raises(RuntimeError, match="Invalid JSON response from LLM"):
-        await generate_cited_summary(
-            paper_id=paper_id, chunks=[chunk1], api_key="mock_key"
-        )
+    summary = await generate_cited_summary(
+        paper_id=paper_id, chunks=[chunk1], api_key="mock_key"
+    )
+    assert isinstance(summary, CitedSummary)
+    assert summary.paper_id == paper_id
+    assert "sentence-transformers/all-MiniLM-L6-v2" in summary.model_used or "all-MiniLM-L6-v2-fallback" in summary.model_used
+

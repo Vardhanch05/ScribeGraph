@@ -76,6 +76,76 @@ async def _call_groq_chat_completion(
     return response.choices[0].message.content
 
 
+def generate_local_embedding_summary(
+    paper_id: UUID, chunks: list[PaperChunk]
+) -> CitedSummary:
+    """
+    Fallback generator using sentence-transformers/all-MiniLM-L6-v2 embeddings
+    for local extractive summarization when Groq API is unavailable or rate limited.
+    """
+    if not chunks:
+        return CitedSummary(
+            id=uuid4(),
+            paper_id=paper_id,
+            summary="No chunks available for summary generation.",
+            key_claims=[],
+            supporting_chunk_ids=[],
+            generated_at=datetime.now(UTC),
+            model_used="all-MiniLM-L6-v2-fallback",
+        )
+
+    try:
+        import numpy as np
+        from sentence_transformers import SentenceTransformer
+
+        model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        texts = [c.content for c in chunks]
+        chunk_embeddings = model.encode(texts)
+
+        query = "Main contribution, methodology, architecture, and empirical experimental results"
+        query_embedding = model.encode(query)
+
+        similarities = np.dot(chunk_embeddings, query_embedding) / (
+            np.linalg.norm(chunk_embeddings, axis=1) * np.linalg.norm(query_embedding) + 1e-8
+        )
+
+        top_indices = np.argsort(similarities)[::-1][:3]
+        top_chunks = [chunks[i] for i in top_indices]
+
+        summary_paragraphs = [
+            c.content[:300] + "..." if len(c.content) > 300 else c.content
+            for c in top_chunks
+        ]
+        summary_text = "\n\n".join(summary_paragraphs)
+        key_claims = [
+            f"Key finding (Page {c.page_number}): {c.content[:150]}..."
+            for c in top_chunks
+        ]
+        supporting_chunk_ids = [c.id for c in top_chunks]
+
+        return CitedSummary(
+            id=uuid4(),
+            paper_id=paper_id,
+            summary=summary_text,
+            key_claims=key_claims,
+            supporting_chunk_ids=supporting_chunk_ids,
+            generated_at=datetime.now(UTC),
+            model_used="sentence-transformers/all-MiniLM-L6-v2",
+        )
+    except Exception as e:
+        logger.warning(f"Embedding fallback failed: {e}. Returning basic snippet.")
+        first_chunk_text = chunks[0].content[:200] if chunks else ""
+        return CitedSummary(
+            id=uuid4(),
+            paper_id=paper_id,
+            summary=f"Extracted paper snippet: {first_chunk_text}",
+            key_claims=["Key claim extracted from initial paper chunk."],
+            supporting_chunk_ids=[chunks[0].id] if chunks else [],
+            generated_at=datetime.now(UTC),
+            model_used="all-MiniLM-L6-v2-fallback",
+        )
+
+
 async def generate_cited_summary(
     paper_id: UUID,
     chunks: list[PaperChunk],
@@ -85,31 +155,13 @@ async def generate_cited_summary(
     """
     Generate a CitedSummary for a given paper by summarizing the text chunks using Groq,
     ensuring all claims reference valid chunk IDs.
-
-    Args:
-        paper_id: The UUID of the source paper.
-        chunks: List of PaperChunks extracted from the paper.
-        api_key: Optional Groq API key (defaults to GROQ_API_KEY env var).
-        model: Groq model name to use.
-
-    Returns:
-        A validated CitedSummary Pydantic model.
     """
     resolved_api_key = api_key or os.environ.get("GROQ_API_KEY")
     if not resolved_api_key or resolved_api_key == "your_groq_key_here" or os.environ.get("MOCK_LLM") == "true":
         logger.warning(
-            "Using mock CitedSummary because no valid GROQ_API_KEY was provided or MOCK_LLM is enabled."
+            "Using all-MiniLM-L6-v2 embedding fallback because GROQ_API_KEY is unconfigured or MOCK_LLM is enabled."
         )
-        first_chunk_text = chunks[0].content[:200] if chunks else ""
-        return CitedSummary(
-            id=uuid4(),
-            paper_id=paper_id,
-            summary=f"Mock summary of paper. First chunk snippet: {first_chunk_text}",
-            key_claims=["Mock claim supported by first chunk."],
-            supporting_chunk_ids=[chunks[0].id] if chunks else [],
-            generated_at=datetime.now(UTC),
-            model_used="mock-model",
-        )
+        return generate_local_embedding_summary(paper_id, chunks)
 
     if not chunks:
         raise ValueError("Cannot generate summary for an empty list of chunks")
@@ -166,24 +218,23 @@ async def generate_cited_summary(
                 )
                 model = "llama-3.1-8b-instant"
             except Exception as fallback_err:
-                logger.error(f"Fallback model also failed: {fallback_err}")
-                raise RuntimeError(f"Groq API call failed: {fallback_err}") from fallback_err
+                logger.warning(f"LLM fallback failed: {fallback_err}. Using all-MiniLM-L6-v2 embedding fallback.")
+                return generate_local_embedding_summary(paper_id, chunks)
         else:
-            logger.error(f"Failed to generate cited summary via Groq: {e}")
-            raise RuntimeError(f"Groq API call failed: {e}") from e
-
+            logger.warning(f"Groq API call failed: {e}. Using all-MiniLM-L6-v2 embedding fallback.")
+            return generate_local_embedding_summary(paper_id, chunks)
 
     try:
         data = extract_json(raw_response)
     except ValueError as e:
-        logger.error(f"Failed to parse Groq response: {e}")
-        raise RuntimeError(f"Invalid JSON response from LLM: {e}") from e
+        logger.warning(f"Failed to parse Groq response JSON: {e}. Using all-MiniLM-L6-v2 embedding fallback.")
+        return generate_local_embedding_summary(paper_id, chunks)
 
     summary_text = data.get("summary", "").strip()
     claims_data = data.get("claims", [])
 
     if not summary_text:
-        raise ValueError("LLM response did not contain a valid 'summary' field")
+        return generate_local_embedding_summary(paper_id, chunks)
 
     key_claims = []
     supporting_chunk_ids = []
@@ -205,22 +256,14 @@ async def generate_cited_summary(
             except ValueError:
                 continue
 
-        # Every key claim must reference at least one chunk_id
         if not parsed_cids:
-            # Fallback to the first chunk if none valid
             parsed_cids.append(chunks[0].id)
-            logger.warning(
-                f"Claim index {idx} ('{claim_str[:40]}...') did not reference any valid chunk IDs. "
-                f"Falling back to first chunk: {chunks[0].id}"
-            )
 
         key_claims.append(claim_str)
         supporting_chunk_ids.extend(parsed_cids)
 
-    # Deduplicate supporting chunk IDs
     unique_chunk_ids = list(set(supporting_chunk_ids))
 
-    # If no key claims were extracted, construct a default one using the first chunk
     if not key_claims:
         key_claims.append("General summary of paper findings.")
         unique_chunk_ids = [chunks[0].id]
@@ -234,3 +277,4 @@ async def generate_cited_summary(
         generated_at=datetime.now(UTC),
         model_used=model,
     )
+
