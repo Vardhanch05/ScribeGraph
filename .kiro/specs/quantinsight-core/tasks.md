@@ -355,13 +355,13 @@
   - Apply targeted fixes; re-run eval; document delta in `eval/results.md`
   - Relevant requirements: FR-7, FR-8, FR-9, FR-15
 
-- [ ] 62. Final README pass
+- [x] 62. Final README pass
   - Architecture diagram, setup instructions (`git clone` + `uv pip install -e .` + `.env`)
   - Demo GIF or screenshot of ingest → chat → trace → Paper Explorer flow
   - Eval results summary with methodology note
   - Relevant requirements: NFR-5
 
-- [ ] 63. Final CI pass and `v0.1` tag
+- [x] 63. Final CI pass and `v0.1` tag
   - Confirm all tests pass on `main`; CI green
   - Tag `v0.1`; confirm fresh clone + install + eval script runs without intervention
   - Relevant requirements: NFR-5
