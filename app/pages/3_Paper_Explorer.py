@@ -106,6 +106,33 @@ with tab_tables:
     else:
         for tbl in db_tables:
             st.markdown(f"**Caption:** {tbl.caption or 'Table'} | **Page:** {tbl.page_number}")
-            df = pd.DataFrame(tbl.rows, columns=tbl.headers)
-            st.dataframe(df, use_container_width=True)
+
+            headers = tbl.headers or []
+            clean_headers = []
+            seen = {}
+            for idx, h in enumerate(headers):
+                h_str = str(h).strip() if h is not None else ""
+                if not h_str:
+                    h_str = f"Col_{idx+1}"
+                if h_str in seen:
+                    seen[h_str] += 1
+                    h_str = f"{h_str}_{seen[h_str]}"
+                else:
+                    seen[h_str] = 1
+                clean_headers.append(h_str)
+
+            try:
+                if clean_headers and tbl.rows and len(clean_headers) == len(tbl.rows[0]):
+                    df = pd.DataFrame(tbl.rows, columns=clean_headers)
+                elif clean_headers:
+                    df = pd.DataFrame(tbl.rows)
+                    df.columns = clean_headers[: len(df.columns)]
+                else:
+                    df = pd.DataFrame(tbl.rows)
+                st.dataframe(df, use_container_width=True)
+            except Exception:
+                if tbl.rows:
+                    st.table(tbl.rows)
+
             st.markdown("---")
+
