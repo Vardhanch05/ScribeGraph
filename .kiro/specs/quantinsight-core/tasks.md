@@ -252,7 +252,7 @@
   - Finalize error handling middleware: all 4xx/5xx responses are structured Pydantic models
   - Relevant requirements: FR-13, NFR-3
 
-- [ ] 45. Write API tests (`tests/test_api.py`)
+- [x] 45. Write API tests (`tests/test_api.py`)
   - Use FastAPI `TestClient`; test all endpoints for happy path + error cases
   - Assert response bodies validate against expected Pydantic schemas
   - Relevant requirements: FR-13, NFR-2
