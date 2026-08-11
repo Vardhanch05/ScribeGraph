@@ -332,25 +332,25 @@
 
 ## Phase 7 — Evaluation & Polish
 
-- [ ] 58. Build 15–30 question eval set (`quantinsight/eval/dataset.json`)
+- [x] 58. Build 15–30 question eval set (`quantinsight/eval/dataset.json`)
   - Questions across 4–6 ingested papers
   - Deliberately cover all `ChunkType`s: prose, table, equation, figure_caption
   - Include at least 5 multi-hop / multi-paper questions
   - Relevant requirements: FR-15
 
-- [ ] 59. Implement `run_eval.py` and wire `/eval/run` endpoint
+- [x] 59. Implement `run_eval.py` and wire `/eval/run` endpoint
   - Run RAGAS (`faithfulness`, `context_precision`, `answer_relevancy`) against `dataset.json`
   - Output scores to stdout and write `eval/results.md` with timestamp
   - `/eval/run` API endpoint triggers this script and returns scores dict
   - Relevant requirements: FR-15, NFR-1
 
-- [ ] 60. Run baseline eval and record results
+- [x] 60. Run baseline eval and record results
   - Execute `run_eval.py` against full eval set
   - Record scores in `eval/results.md`
   - Check against PRD targets: faithfulness ≥ 0.85, context precision ≥ 0.85
   - Relevant requirements: FR-15
 
-- [ ] 61. Prompt and retrieval iteration based on eval failures
+- [x] 61. Prompt and retrieval iteration based on eval failures
   - Identify low-scoring questions; trace failures to root cause (prompt, retrieval, parsing)
   - Apply targeted fixes; re-run eval; document delta in `eval/results.md`
   - Relevant requirements: FR-7, FR-8, FR-9, FR-15

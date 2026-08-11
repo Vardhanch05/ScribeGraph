@@ -87,10 +87,13 @@ def create_app() -> FastAPI:
     from quantinsight.api.routes.ingest import router as ingest_router
     from quantinsight.api.routes.papers import router as papers_router
     from quantinsight.api.routes.query import router as query_router
+    from quantinsight.api.routes.eval import router as eval_router
 
     app.include_router(ingest_router)
     app.include_router(papers_router)
     app.include_router(query_router)
+    app.include_router(eval_router)
+
 
 
     @app.get("/", tags=["General"])

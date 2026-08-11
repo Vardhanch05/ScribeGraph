@@ -1,0 +1,77 @@
+[
+  {
+    "question": "What is the key architectural innovation introduced in 'Attention Is All You Need'?",
+    "target_chunk_type": "prose",
+    "ground_truth": "The Transformer model architecture, which relies entirely on self-attention mechanisms without using recurrent or convolutional neural networks."
+  },
+  {
+    "question": "What mathematical formula defines Scaled Dot-Product Attention?",
+    "target_chunk_type": "equation",
+    "ground_truth": "Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V"
+  },
+  {
+    "question": "What are the BLEU scores achieved by the Transformer on WMT 2014 English-to-German and English-to-French translation tasks?",
+    "target_chunk_type": "table",
+    "ground_truth": "The Transformer big model achieved 28.4 BLEU on English-to-German and 41.8 BLEU on English-to-French."
+  },
+  {
+    "question": "How does Multi-Head Attention allow the model to jointly attend to information from different representation subspaces?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Multi-Head Attention projects queries, keys, and values h times with different, learned linear projections to d_k, d_k and d_v dimensions respectively."
+  },
+  {
+    "question": "What residual learning framework is introduced in ResNet?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Deep residual learning reformulation using shortcut connections F(x) + x to ease training of substantially deeper networks."
+  },
+  {
+    "question": "What is the degradation problem in deep neural networks addressed by ResNet?",
+    "target_chunk_type": "prose",
+    "ground_truth": "With network depth increasing, accuracy gets saturated and then degrades rapidly, which is not caused by overfitting."
+  },
+  {
+    "question": "What is the formula for the Adam optimizer learning rate update mechanism?",
+    "target_chunk_type": "equation",
+    "ground_truth": "m_t = beta1 * m_{t-1} + (1 - beta1) * g_t, v_t = beta2 * v_{t-1} + (1 - beta2) * g_t^2, theta_t = theta_{t-1} - alpha * hat_m_t / (sqrt(hat_v_t) + eps)"
+  },
+  {
+    "question": "Why does Adam compute bias-corrected estimates for first and second moment vectors?",
+    "target_chunk_type": "equation",
+    "ground_truth": "Because moment estimates m_t and v_t are initialized as vectors of 0's, biasing them towards zero, especially during initial steps."
+  },
+  {
+    "question": "Comparing Transformer and ResNet, how do both architectures use residual connections?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Both architectures add input shortcuts around sub-layers followed by Layer Normalization or Batch Normalization to stabilize deep gradient flow."
+  },
+  {
+    "question": "What positional encoding formula is used in Transformer to convey token sequence order?",
+    "target_chunk_type": "equation",
+    "ground_truth": "PE_(pos, 2i) = sin(pos / 10000^(2i/d_model)) and PE_(pos, 2i+1) = cos(pos / 10000^(2i/d_model))"
+  },
+  {
+    "question": "What dropout rate was applied to the Transformer model during training?",
+    "target_chunk_type": "prose",
+    "ground_truth": "A residual dropout rate of P_drop = 0.1 was applied to the output of each sub-layer before addition and normalization."
+  },
+  {
+    "question": "What image classification accuracy did ResNet-152 achieve on the ImageNet validation dataset?",
+    "target_chunk_type": "table",
+    "ground_truth": "ResNet-152 achieved a top-5 error rate of 3.57% on ImageNet validation."
+  },
+  {
+    "question": "How does Adam optimizer handle sparse gradients compared to SGD?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Adam adapts learning rates based on uncentered second moments, making it well-suited for non-stationary objectives and sparse gradients."
+  },
+  {
+    "question": "What warmup step count is recommended for Adam optimization in the Transformer base model?",
+    "target_chunk_type": "prose",
+    "ground_truth": "The learning rate increases linearly for the first 4,000 warmup steps, then decreases proportionally to the inverse square root of the step number."
+  },
+  {
+    "question": "What is the computational complexity per layer for Self-Attention vs Recurrent layers?",
+    "target_chunk_type": "table",
+    "ground_truth": "Self-Attention complexity per layer is O(n^2 * d) while Recurrent is O(n * d^2)."
+  }
+]
