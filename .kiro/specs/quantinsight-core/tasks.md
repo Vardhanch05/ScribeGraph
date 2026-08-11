@@ -243,11 +243,11 @@
   - `GET /papers/{paper_id}`: return `SourcePaper` + `CitedSummary`
   - Relevant requirements: FR-13
 
-- [ ] 43. Implement `/query` endpoint
+- [x] 43. Implement `/query` endpoint
   - `POST /query`: accepts `{query: str, paper_ids: list[UUID]}`; runs agent graph; returns `QueryResponse`
   - Relevant requirements: FR-6, FR-13
 
-- [ ] 44. Implement `/query/stream` SSE endpoint and error middleware
+- [x] 44. Implement `/query/stream` SSE endpoint and error middleware
   - `POST /query/stream`: SSE stream of `AgentTraceStep` objects — for external clients only
   - Finalize error handling middleware: all 4xx/5xx responses are structured Pydantic models
   - Relevant requirements: FR-13, NFR-3
