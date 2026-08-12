@@ -10,4 +10,5 @@ artifacts/
 data/
 quantinsight/eval/eval_cache.json
 trash/
-
+sample_papers/*.pdf
+sample_papers/**/*.pdf
