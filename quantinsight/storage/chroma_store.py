@@ -244,9 +244,9 @@ async def search(
                 # Collection does not exist yet, skip
                 continue
 
-        # 4. Sort all results by distance (ascending) and take top limit
+        # 4. Sort all results by distance (ascending)
         raw_results.sort(key=lambda x: x[2])
-        return raw_results[:limit]
+        return raw_results
 
     # Run ChromaDB retrieval in thread pool
     raw_results = await asyncio.to_thread(_search)

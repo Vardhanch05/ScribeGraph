@@ -125,16 +125,29 @@ async def synthesizer_node(state: GraphState | dict[str, Any]) -> dict[str, Any]
                 seen.add(u)
                 unique_citations.append(u)
 
+        is_fallback = "Fallback draft answer for query" in (draft_answer or "")
+        is_degraded = any("DEGRADED VERIFICATION MODE" in str(note) for note in verification_notes)
+
+        if is_fallback:
+            self_correction = False
+            conf_note = "Generation failed — fallback response returned due to API issue."
+        elif is_degraded:
+            self_correction = False
+            conf_note = "Answer compiled in Degraded Verification Mode (unverified due to API exception)."
+        else:
+            self_correction = revision_count > 0
+            conf_note = (
+                "Answer compiled and verified."
+                if revision_count == 0
+                else "Answer corrected and verified."
+            )
+
         final_ans = QueryResponse(
             answer=draft_answer,
             citations=unique_citations,
             trace=trace,  # Will be populated completely
-            self_correction_applied=revision_count > 0,
-            confidence_note=(
-                "Answer compiled and verified."
-                if revision_count == 0
-                else "Answer corrected and verified."
-            ),
+            self_correction_applied=self_correction,
+            confidence_note=conf_note,
         )
 
         # Update trace for final answer
