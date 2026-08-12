@@ -45,28 +45,58 @@ async def verifier_node(state: GraphState | dict[str, Any]) -> dict[str, Any]:
 
     step_index = len(trace)
 
-    # Format and truncate the evidence to prevent Verifier context overflow
+    # Extract cited UUIDs from draft answer to guarantee cited chunks are included
+    import re
+    uuid_pattern = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+    cited_uuid_strs = set(uuid_pattern.findall(draft_answer or ""))
+
+    # Order chunks: cited chunks first, followed by top uncited chunks
+    cited_chunks = [c for c in retrieved_chunks if str(c.id) in cited_uuid_strs]
+    uncited_chunks = [c for c in retrieved_chunks if str(c.id) not in cited_uuid_strs]
+    ordered_chunks = cited_chunks + uncited_chunks
+
+    cited_tables = [t for t in retrieved_tables if str(t.chunk_id) in cited_uuid_strs]
+    uncited_tables = [t for t in retrieved_tables if str(t.chunk_id) not in cited_uuid_strs]
+    ordered_tables = cited_tables + uncited_tables
+
+    cited_eqs = [e for e in retrieved_equations if str(e.chunk_id) in cited_uuid_strs]
+    uncited_eqs = [e for e in retrieved_equations if str(e.chunk_id) not in cited_uuid_strs]
+    ordered_eqs = cited_eqs + uncited_eqs
+
     evidence_parts = []
-    for chunk in retrieved_chunks[:8]:  # Limit to top 8 prose chunks
-        evidence_parts.append(
-            f"--- PROSE CHUNK ID: {chunk.id} ---\n{chunk.content}"
-        )
-    for table in retrieved_tables[:4]:  # Limit to top 4 tables
-        evidence_parts.append(
+    total_chars = 0
+    max_chars = 10000
+
+    for chunk in ordered_chunks:
+        part = f"--- PROSE CHUNK ID: {chunk.id} ---\n{chunk.content}"
+        if total_chars + len(part) <= max_chars:
+            evidence_parts.append(part)
+            total_chars += len(part)
+
+    for table in ordered_tables:
+        part = (
             f"--- TABLE ID: {table.chunk_id} ---\n"
             f"Caption: {table.caption or ''}\n"
             f"Headers: {table.headers}\n"
             f"Rows: {table.rows}"
         )
-    for eq in retrieved_equations[:4]:  # Limit to top 4 equations
-        evidence_parts.append(
+        if total_chars + len(part) <= max_chars:
+            evidence_parts.append(part)
+            total_chars += len(part)
+
+    for eq in ordered_eqs:
+        part = (
             f"--- EQUATION ID: {eq.chunk_id} ---\n"
             f"Latex: {eq.latex}\n"
             f"Context: {eq.surrounding_context}"
         )
+        if total_chars + len(part) <= max_chars:
+            evidence_parts.append(part)
+            total_chars += len(part)
+
     evidence_text = "\n\n".join(evidence_parts)
-    if len(evidence_text) > 10000:
-        evidence_text = evidence_text[:10000] + "\n... [Evidence truncated for verification]"
+    if not evidence_text:
+        evidence_text = "No retrieved evidence chunks available for verification."
 
     system_prompt = (
         "You are the Verifier node in an agentic RAG system for research papers.\n"

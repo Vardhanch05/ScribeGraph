@@ -322,3 +322,94 @@ async def test_agent_multipaper_comparison(temp_chroma, temp_db, mock_ingestion_
     assert planner_step.node_name == "Planner"
     assert "Is Multihop: True" in planner_step.output_summary
 
+
+@pytest.mark.anyio
+async def test_verifier_context_truncation_prioritizes_cited_chunks():
+    from quantinsight.agent.nodes.verifier import verifier_node
+    from quantinsight.schemas.models import PaperChunk, ChunkType
+
+    cited_id = uuid4()
+    uncited_id = uuid4()
+
+    cited_chunk = PaperChunk(
+        id=cited_id,
+        paper_id=uuid4(),
+        chunk_type=ChunkType.PROSE,
+        content="Target cited content that must be included.",
+        page_number=1,
+        order_index=0,
+    )
+    # Create large uncited chunks that total > 10k chars
+    uncited_chunks = [
+        PaperChunk(
+            id=uuid4(),
+            paper_id=uuid4(),
+            chunk_type=ChunkType.PROSE,
+            content="A" * 2000,
+            page_number=i,
+            order_index=i,
+        )
+        for i in range(10)
+    ]
+
+    state = {
+        "query": "Test query",
+        "draft_answer": f"Draft stating factual claim [{cited_id}].",
+        "retrieved_chunks": uncited_chunks + [cited_chunk],
+        "retrieved_tables": [],
+        "retrieved_equations": [],
+        "revision_count": 0,
+        "trace": [],
+    }
+
+    res = await verifier_node(state)
+    assert res["needs_revision"] is False
+    assert len(res["verification_notes"]) > 0
+
+
+@pytest.mark.anyio
+async def test_verifier_degraded_mode_flagging():
+    from quantinsight.agent.nodes.verifier import verifier_node
+    from quantinsight.schemas.models import PaperChunk, ChunkType
+
+    chunk = PaperChunk(
+        id=uuid4(),
+        paper_id=uuid4(),
+        chunk_type=ChunkType.PROSE,
+        content="Test content",
+        page_number=1,
+        order_index=0,
+    )
+
+    state = {
+        "query": "Test query",
+        "draft_answer": "Draft answer",
+        "retrieved_chunks": [chunk],
+        "retrieved_tables": [],
+        "retrieved_equations": [],
+        "revision_count": 0,
+        "trace": [],
+    }
+
+    with patch("quantinsight.agent.nodes.verifier.is_mock_enabled", return_value=False):
+        with patch("quantinsight.agent.nodes.verifier.call_groq", side_effect=RuntimeError("Groq 400 Context Limit")):
+            res = await verifier_node(state)
+            assert res["needs_revision"] is False
+            assert any("DEGRADED VERIFICATION MODE" in note for note in res["verification_notes"])
+
+
+@pytest.mark.anyio
+async def test_llm_fallback_skips_context_and_tpd_limits():
+    from quantinsight.agent.llm import call_groq
+
+    with patch("quantinsight.agent.llm.is_mock_enabled", return_value=False):
+        with patch("quantinsight.agent.llm._call_groq_chat_completion") as mock_completion:
+            mock_completion.side_effect = [
+                Exception("Rate limit 429 - tokens per day (TPD) exceeded"),
+                "Successful fallback response",
+            ]
+            response = await call_groq("System", "User")
+            assert response == "Successful fallback response"
+            assert mock_completion.call_count == 2
+
+
