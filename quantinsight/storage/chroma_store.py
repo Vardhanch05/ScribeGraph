@@ -123,7 +123,7 @@ async def save_embeddings(
         # 2. Process Table Units
         if tables:
             texts = [
-                f"Table caption: {t.caption or ''}. Headers: {', '.join(t.headers)}."
+                f"Table caption: {t.caption or ''}. Headers: {', '.join(t.headers)}. Rows: {'; '.join([' | '.join(r) for r in t.rows[:5]])}"
                 for t in tables
             ]
             embeddings = model.encode(texts).tolist()
@@ -145,7 +145,7 @@ async def save_embeddings(
         # 3. Process Equation Units
         if equations:
             texts = [
-                f"Equation: {eq.latex}. Context: {eq.surrounding_context}"
+                f"Equation {eq.equation_label or ''}: {eq.latex}. Context: {eq.surrounding_context}"
                 for eq in equations
             ]
             embeddings = model.encode(texts).tolist()
