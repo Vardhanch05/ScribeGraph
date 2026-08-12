@@ -45,51 +45,53 @@ async def verifier_node(state: GraphState | dict[str, Any]) -> dict[str, Any]:
 
     step_index = len(trace)
 
-    # Extract cited UUIDs from draft answer to guarantee cited chunks are included
+    # Extract cited UUIDs from draft answer to guarantee cited items are included first
     import re
     uuid_pattern = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
     cited_uuid_strs = set(uuid_pattern.findall(draft_answer or ""))
 
-    # Order chunks: cited chunks first, followed by top uncited chunks
-    cited_chunks = [c for c in retrieved_chunks if str(c.id) in cited_uuid_strs]
-    uncited_chunks = [c for c in retrieved_chunks if str(c.id) not in cited_uuid_strs]
-    ordered_chunks = cited_chunks + uncited_chunks
+    # Separate items into cited vs uncited across all modal types
+    cited_items = []
+    uncited_items = []
 
-    cited_tables = [t for t in retrieved_tables if str(t.chunk_id) in cited_uuid_strs]
-    uncited_tables = [t for t in retrieved_tables if str(t.chunk_id) not in cited_uuid_strs]
-    ordered_tables = cited_tables + uncited_tables
+    for c in retrieved_chunks:
+        part = f"--- PROSE CHUNK ID: {c.id} ---\n{c.content}"
+        if str(c.id) in cited_uuid_strs:
+            cited_items.append(part)
+        else:
+            uncited_items.append(part)
 
-    cited_eqs = [e for e in retrieved_equations if str(e.chunk_id) in cited_uuid_strs]
-    uncited_eqs = [e for e in retrieved_equations if str(e.chunk_id) not in cited_uuid_strs]
-    ordered_eqs = cited_eqs + uncited_eqs
+    for t in retrieved_tables:
+        part = (
+            f"--- TABLE ID: {t.chunk_id} ---\n"
+            f"Caption: {t.caption or ''}\n"
+            f"Headers: {t.headers}\n"
+            f"Rows: {t.rows}"
+        )
+        if str(t.chunk_id) in cited_uuid_strs:
+            cited_items.append(part)
+        else:
+            uncited_items.append(part)
+
+    for e in retrieved_equations:
+        part = (
+            f"--- EQUATION ID: {e.chunk_id} ---\n"
+            f"Latex: {e.latex}\n"
+            f"Context: {e.surrounding_context}"
+        )
+        if str(e.chunk_id) in cited_uuid_strs:
+            cited_items.append(part)
+        else:
+            uncited_items.append(part)
+
+    # All cited items come first, followed by remaining uncited items
+    ordered_evidence_parts = cited_items + uncited_items
 
     evidence_parts = []
     total_chars = 0
     max_chars = 10000
 
-    for chunk in ordered_chunks:
-        part = f"--- PROSE CHUNK ID: {chunk.id} ---\n{chunk.content}"
-        if total_chars + len(part) <= max_chars:
-            evidence_parts.append(part)
-            total_chars += len(part)
-
-    for table in ordered_tables:
-        part = (
-            f"--- TABLE ID: {table.chunk_id} ---\n"
-            f"Caption: {table.caption or ''}\n"
-            f"Headers: {table.headers}\n"
-            f"Rows: {table.rows}"
-        )
-        if total_chars + len(part) <= max_chars:
-            evidence_parts.append(part)
-            total_chars += len(part)
-
-    for eq in ordered_eqs:
-        part = (
-            f"--- EQUATION ID: {eq.chunk_id} ---\n"
-            f"Latex: {eq.latex}\n"
-            f"Context: {eq.surrounding_context}"
-        )
+    for part in ordered_evidence_parts:
         if total_chars + len(part) <= max_chars:
             evidence_parts.append(part)
             total_chars += len(part)

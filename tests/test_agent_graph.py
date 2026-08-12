@@ -329,7 +329,6 @@ async def test_verifier_context_truncation_prioritizes_cited_chunks():
     from quantinsight.schemas.models import PaperChunk, ChunkType
 
     cited_id = uuid4()
-    uncited_id = uuid4()
 
     cited_chunk = PaperChunk(
         id=cited_id,
@@ -339,17 +338,17 @@ async def test_verifier_context_truncation_prioritizes_cited_chunks():
         page_number=1,
         order_index=0,
     )
-    # Create large uncited chunks that total > 10k chars
+    # Create large uncited chunks that total > 10k chars (would fill budget if prioritized)
     uncited_chunks = [
         PaperChunk(
             id=uuid4(),
             paper_id=uuid4(),
             chunk_type=ChunkType.PROSE,
-            content="A" * 2000,
+            content=f"Uncited prose chunk {i} " + ("X" * 1500),
             page_number=i,
             order_index=i,
         )
-        for i in range(10)
+        for i in range(8)
     ]
 
     state = {
@@ -362,9 +361,20 @@ async def test_verifier_context_truncation_prioritizes_cited_chunks():
         "trace": [],
     }
 
-    res = await verifier_node(state)
-    assert res["needs_revision"] is False
-    assert len(res["verification_notes"]) > 0
+    with patch("quantinsight.agent.nodes.verifier.is_mock_enabled", return_value=False):
+        with patch("quantinsight.agent.nodes.verifier.call_groq", new_callable=AsyncMock) as mock_call_groq:
+            mock_call_groq.return_value = '{"needs_revision": false, "verification_notes": ["Verified"]}'
+            res = await verifier_node(state)
+            
+            # Verify call_groq was invoked
+            assert mock_call_groq.call_count == 1
+            _, kwargs = mock_call_groq.call_args
+            user_prompt = kwargs.get("user_prompt", "")
+            
+            # Explicitly assert cited chunk survived truncation and is present in prompt
+            assert "Target cited content that must be included." in user_prompt
+            assert str(cited_id) in user_prompt
+            assert res["needs_revision"] is False
 
 
 @pytest.mark.anyio
