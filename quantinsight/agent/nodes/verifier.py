@@ -45,26 +45,28 @@ async def verifier_node(state: GraphState | dict[str, Any]) -> dict[str, Any]:
 
     step_index = len(trace)
 
-    # Format the evidence
+    # Format and truncate the evidence to prevent Verifier context overflow
     evidence_parts = []
-    for chunk in retrieved_chunks:
+    for chunk in retrieved_chunks[:8]:  # Limit to top 8 prose chunks
         evidence_parts.append(
             f"--- PROSE CHUNK ID: {chunk.id} ---\n{chunk.content}"
         )
-    for table in retrieved_tables:
+    for table in retrieved_tables[:4]:  # Limit to top 4 tables
         evidence_parts.append(
             f"--- TABLE ID: {table.chunk_id} ---\n"
             f"Caption: {table.caption or ''}\n"
             f"Headers: {table.headers}\n"
             f"Rows: {table.rows}"
         )
-    for eq in retrieved_equations:
+    for eq in retrieved_equations[:4]:  # Limit to top 4 equations
         evidence_parts.append(
             f"--- EQUATION ID: {eq.chunk_id} ---\n"
             f"Latex: {eq.latex}\n"
             f"Context: {eq.surrounding_context}"
         )
     evidence_text = "\n\n".join(evidence_parts)
+    if len(evidence_text) > 10000:
+        evidence_text = evidence_text[:10000] + "\n... [Evidence truncated for verification]"
 
     system_prompt = (
         "You are the Verifier node in an agentic RAG system for research papers.\n"
@@ -93,7 +95,6 @@ async def verifier_node(state: GraphState | dict[str, Any]) -> dict[str, Any]:
 
     if is_mock_enabled():
         logger.info("Verifier: using mock verifier response.")
-        # Trigger mock revision if the query contains "revise" and revision_count is 0
         if "revise" in query.lower() and revision_count == 0:
             needs_revision = True
             verification_notes = ["Mock revision requested because query contains 'revise'."]
@@ -115,7 +116,7 @@ async def verifier_node(state: GraphState | dict[str, Any]) -> dict[str, Any]:
         except Exception as e:
             logger.error(f"Verifier failed to call LLM: {e}")
             needs_revision = False
-            verification_notes = [f"Verifier failed to execute check: {e}. Accepting draft by default."]
+            verification_notes = [f"⚠️ DEGRADED VERIFICATION MODE: Verifier check bypassed due to API error ({e}). Draft accepted without verification."]
 
     # Record trace step
     trace_step = AgentTraceStep(

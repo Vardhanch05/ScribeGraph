@@ -72,6 +72,7 @@
 | 2026-08-12 | Implemented automatic paper title resolution & hybrid retriever chunk inclusion | Resolved cross-paper distractor pollution by matching paper titles/acronyms in queries to `paper_ids` metadata filters, and included `prose_chunks` in retriever `step_types` when searching equations or tables to capture inline formulas and definitions. | Agent Planner & Retriever Nodes |
 | 2026-08-12 | Configured active multi-model fallback pool (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `qwen/qwen3.6-27b`, `allam-2-7b`) in `llm.py` | Bypasses Groq free tier TPD rate-limit pauses by instantly routing LLM calls to non-depleted models in the active model pool. | LLM Client (`quantinsight/agent/llm.py`) |
 | 2026-08-12 | Implemented Hybrid BM25 + Dense RRF Search & Parent-Child Context Linkage | Combined `rank_bm25` symbol/keyword tokenization with ChromaDB vector embeddings using Reciprocal Rank Fusion, and attached surrounding parent section prose when retrieving isolated tables or equations. | Storage & Retriever Nodes (`hybrid_search.py`, `retriever.py`) |
+| 2026-08-12 | Capped Verifier evidence input to 10k chars and implemented explicit Degraded Mode logging | Capped evidence chunks to top 8 prose / 4 tables / 4 equations (max 10k chars) to eliminate Verifier HTTP 400 payload errors, and tagged API failures in Verifier trace notes as `⚠️ DEGRADED VERIFICATION MODE`. | Verifier Node (`verifier.py`) |
 
 
 

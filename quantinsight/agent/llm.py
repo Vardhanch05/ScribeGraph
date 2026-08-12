@@ -150,11 +150,11 @@ async def call_groq(
             err_msg = str(e).lower()
             if "429" in err_msg or "413" in err_msg or "rate limit" in err_msg or "limit" in err_msg:
                 is_tpd = "tpd" in err_msg or "tokens per day" in err_msg
-                if is_tpd:
-                    logger.warning(f"Groq model '{candidate}' TPD limit reached. Marking as depleted.")
+                is_context_limit = "413" in err_msg or "request too large" in err_msg
+                if is_tpd or is_context_limit:
+                    logger.warning(f"Groq model '{candidate}' TPD/Context limit reached ({e}). Moving to next model.")
                     _depleted_models.add(candidate)
                     last_exception = e
-                    # Try next non-depleted candidate immediately
                     continue
 
                 sleep_time = parse_retry_after(err_msg)
@@ -167,15 +167,14 @@ async def call_groq(
                 if len(_depleted_models) >= len(all_candidates):
                     _depleted_models.clear()
 
-                # Robust retry loop for rate-limited requests
-                for attempt in range(15):
+                for attempt in range(3):
                     try:
                         return await _call_groq_chat_completion(
                             client, candidate, messages, response_json=response_json
                         )
                     except Exception as sub_e:
                         sub_msg = str(sub_e).lower()
-                        if "tpd" in sub_msg or "tokens per day" in sub_msg:
+                        if "tpd" in sub_msg or "tokens per day" in sub_msg or "413" in sub_msg or "request too large" in sub_msg:
                             _depleted_models.add(candidate)
                             break
                         sub_sleep = parse_retry_after(sub_msg)
