@@ -84,6 +84,7 @@ if submit:
                 status_block.update(label="Ingestion Completed Successfully!", state="complete", expanded=False)
 
                 st.success(f"Paper ingested successfully! Assigned Paper ID: `{paper_id}`")
+                st.session_state["selected_paper_ids"] = [str(paper_id)]
 
                 # Fetch paper details
                 paper = get_paper_by_id(paper_id)

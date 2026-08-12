@@ -15,7 +15,8 @@ from quantinsight.schemas.models import (
 
 class GraphState(BaseModel):
     query: str
-    paper_ids: list[UUID]
+    paper_ids: list[UUID] = Field(default_factory=list)
+
     plan: str | None = None
     retrieved_chunks: list[PaperChunk] = Field(default_factory=list)
     retrieved_tables: list[TableUnit] = Field(default_factory=list)

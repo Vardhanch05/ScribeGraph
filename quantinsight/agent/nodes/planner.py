@@ -3,11 +3,66 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from uuid import UUID
 from quantinsight.agent.llm import call_groq, extract_json, is_mock_enabled
 from quantinsight.agent.state import GraphState
 from quantinsight.schemas.models import AgentTraceStep
+from quantinsight.storage.sqlite_store import list_all_papers
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_paper_ids_from_query(query: str, paper_ids: list[UUID] | None) -> list[UUID]:
+    """If paper_ids is empty, attempt to match paper titles/keywords in query against ingested papers."""
+    if paper_ids:
+        return paper_ids
+
+    q_lower = query.lower()
+    try:
+        all_papers = list_all_papers()
+    except Exception as e:
+        logger.warning(f"Could not list papers for resolution: {e}")
+        return []
+
+    resolved = []
+    for paper in all_papers:
+        title_lower = (paper.title or "").lower()
+        arxiv_id = paper.arxiv_id or ""
+
+        if arxiv_id and arxiv_id in q_lower:
+            resolved.append(paper.id)
+            continue
+
+        # Dynamic title token matching for any ingested paper
+        words = [w.strip(":,.-()") for w in title_lower.split() if len(w.strip(":,.-()")) >= 3]
+        stop_words = {"with", "from", "that", "this", "have", "for", "using", "through", "about", "study", "paper"}
+        title_tokens = [w for w in words if w not in stop_words]
+
+        matched_tokens = [t for t in title_tokens if t in q_lower]
+        if len(matched_tokens) >= 2 or any(len(t) >= 6 and t in q_lower for t in title_tokens):
+            resolved.append(paper.id)
+            continue
+
+        # Domain fallback keyword matching
+        keywords = []
+        if "patchtst" in title_lower or "patching" in title_lower:
+            keywords.extend(["patchtst", "patch tst", "patching"])
+        if "resnet" in title_lower:
+            keywords.extend(["resnet", "residual learning"])
+        if "attention" in title_lower or "transformer" in title_lower:
+            keywords.extend(["attention is all you need", "transformer"])
+        if "adam" in title_lower:
+            keywords.extend(["adam", "stochastic optimization"])
+        if "lora" in title_lower:
+            keywords.extend(["lora", "low-rank adaptation"])
+        if "layoutlm" in title_lower:
+            keywords.extend(["layoutlm", "layoutlmv3", "document ai"])
+
+        if any(kw in q_lower for kw in keywords if kw):
+            resolved.append(paper.id)
+            continue
+
+    return resolved
 
 
 async def planner_node(state: GraphState | dict[str, Any]) -> dict[str, Any]:
@@ -23,6 +78,12 @@ async def planner_node(state: GraphState | dict[str, Any]) -> dict[str, Any]:
         else state.get("paper_ids", [])
     )
     trace = state.trace if hasattr(state, "trace") else state.get("trace", [])
+
+    # Automatically resolve paper IDs from query text if paper_ids is empty
+    resolved_paper_ids = resolve_paper_ids_from_query(query, paper_ids)
+    if resolved_paper_ids != paper_ids:
+        logger.info(f"Planner resolved paper IDs from query: {resolved_paper_ids}")
+        paper_ids = resolved_paper_ids
 
     step_index = len(trace)
 
@@ -101,5 +162,6 @@ async def planner_node(state: GraphState | dict[str, Any]) -> dict[str, Any]:
 
     return {
         "plan": plan_str,
+        "paper_ids": paper_ids,
         "trace": new_trace,
     }

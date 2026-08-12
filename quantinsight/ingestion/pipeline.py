@@ -56,8 +56,12 @@ async def ingest_paper(
 
     # Run parsing wrapper
     raw_markdown = await parse_pdf(
-        arxiv_id=arxiv_id, pdf_bytes=pdf_bytes, paper_id=paper_id, api_key=api_key
+        arxiv_id=arxiv_id if pdf_bytes is None else None,
+        pdf_bytes=pdf_bytes,
+        paper_id=paper_id,
+        api_key=api_key,
     )
+
 
     # 2. Segment markdown
     chunks, tables, equations, warnings = segment_markdown(raw_markdown, paper_id)

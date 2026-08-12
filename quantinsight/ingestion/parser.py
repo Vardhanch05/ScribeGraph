@@ -131,6 +131,8 @@ async def parse_pdf(
     if arxiv_id is not None and pdf_bytes is not None:
         raise ValueError("Only one of arxiv_id or pdf_bytes can be provided.")
 
+
+
     current_paper_id = paper_id or uuid4()
 
     # 48h Cache Avoidance Check
@@ -168,9 +170,10 @@ async def parse_pdf(
     if not llama_key:
         raise ValueError("LLAMA_CLOUD_API_KEY is not set.")
 
-    # If arXiv ID is provided, download PDF bytes
-    if arxiv_id is not None:
+    # If arXiv ID is provided and pdf_bytes is None, download PDF bytes
+    if pdf_bytes is None and arxiv_id is not None:
         pdf_bytes = await fetch_arxiv_pdf(arxiv_id)
+
 
     # Write bytes to a temporary file
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:

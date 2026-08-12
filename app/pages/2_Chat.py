@@ -66,13 +66,19 @@ if "current_trace" not in st.session_state:
 papers = list_all_papers()
 paper_map = {f"{p.title} ({p.arxiv_id or str(p.id)[:8]})": str(p.id) for p in papers}
 
+default_selected_ids = st.session_state.get("selected_paper_ids", [])
+if not default_selected_ids and paper_map:
+    # Automatically default to the most recently ingested paper
+    default_selected_ids = [list(paper_map.values())[-1]]
+
 selected_paper_labels = st.sidebar.multiselect(
     "Target Papers (Leave empty for All)",
     options=list(paper_map.keys()),
-    default=[k for k, v in paper_map.items() if v in st.session_state.get("selected_paper_ids", [])],
+    default=[k for k, v in paper_map.items() if v in default_selected_ids],
 )
 
-selected_ids = [UUID(paper_map[label]) for label in selected_paper_labels] if selected_paper_labels else None
+selected_ids = [UUID(paper_map[label]) for label in selected_paper_labels]
+
 
 # Layout setup: 65% Chat, 35% Execution Trace
 chat_col, trace_col = st.columns([65, 35])

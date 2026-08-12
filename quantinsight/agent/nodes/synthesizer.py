@@ -159,31 +159,41 @@ async def synthesizer_node(state: GraphState | dict[str, Any]) -> dict[str, Any]
     # Format the evidence
     evidence_parts = []
     valid_ids = set()
+    total_chars = 0
+    max_evidence_chars = 14000
 
     for chunk in retrieved_chunks:
-        evidence_parts.append(
-            f"--- PROSE CHUNK ID: {chunk.id} (Page {chunk.page_number}) ---\n{chunk.content}"
-        )
+        part = f"--- PROSE CHUNK ID: {chunk.id} (Page {chunk.page_number}) ---\n{chunk.content}"
         valid_ids.add(chunk.id)
+        if total_chars < max_evidence_chars:
+            evidence_parts.append(part)
+            total_chars += len(part)
 
     for table in retrieved_tables:
-        evidence_parts.append(
+        part = (
             f"--- TABLE ID: {table.chunk_id} (Page {table.page_number}) ---\n"
             f"Caption: {table.caption or ''}\n"
             f"Headers: {table.headers}\n"
             f"Rows: {table.rows}"
         )
         valid_ids.add(table.chunk_id)
+        if total_chars < max_evidence_chars:
+            evidence_parts.append(part)
+            total_chars += len(part)
 
     for eq in retrieved_equations:
-        evidence_parts.append(
+        part = (
             f"--- EQUATION ID: {eq.chunk_id} (Page {eq.page_number}) ---\n"
             f"Latex: {eq.latex}\n"
             f"Context: {eq.surrounding_context}"
         )
         valid_ids.add(eq.chunk_id)
+        if total_chars < max_evidence_chars:
+            evidence_parts.append(part)
+            total_chars += len(part)
 
     evidence_text = "\n\n".join(evidence_parts)
+
 
     system_prompt = (
         "You are the Synthesizer node in an agentic RAG system for research papers.\n"

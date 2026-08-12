@@ -166,10 +166,11 @@ async def generate_cited_summary(
     if not chunks:
         raise ValueError("Cannot generate summary for an empty list of chunks")
 
-    # Limit chunk text length to ~28,000 chars (~7,000 tokens) to respect Groq 12,000 TPM limit
+    # Limit chunk text length to ~18,000 chars (~4,500 tokens) to respect Groq TPM limits (6,000-12,000 TPM)
     formatted_chunks = []
     current_chars = 0
-    max_chars = 28000
+    max_chars = 18000
+
 
     for chunk in chunks:
         chunk_str = f"=== CHUNK ID: {chunk.id} (Page {chunk.page_number}) ===\n{chunk.content}\n\n"
@@ -212,11 +213,18 @@ async def generate_cited_summary(
         err_msg = str(e).lower()
         if "413" in err_msg or "rate_limit" in err_msg or "tokens per minute" in err_msg:
             logger.warning("Groq TPM limit reached for 70b model. Falling back to llama-3.1-8b-instant...")
+            fallback_user_prompt = user_prompt[:8000] + "\n\n(Truncated for rate limit safety)"
+
+            fallback_messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": fallback_user_prompt},
+            ]
             try:
                 raw_response = await _call_groq_chat_completion(
-                    client, "llama-3.1-8b-instant", messages
+                    client, "llama-3.1-8b-instant", fallback_messages
                 )
                 model = "llama-3.1-8b-instant"
+
             except Exception as fallback_err:
                 logger.warning(f"LLM fallback failed: {fallback_err}. Using all-MiniLM-L6-v2 embedding fallback.")
                 return generate_local_embedding_summary(paper_id, chunks)
@@ -230,8 +238,16 @@ async def generate_cited_summary(
         logger.warning(f"Failed to parse Groq response JSON: {e}. Using all-MiniLM-L6-v2 embedding fallback.")
         return generate_local_embedding_summary(paper_id, chunks)
 
-    summary_text = data.get("summary", "").strip()
+    summary_text = data.get("summary", "")
+    if isinstance(summary_text, list):
+        summary_text = "\n\n".join(str(s) for s in summary_text)
+    elif not isinstance(summary_text, str):
+        summary_text = str(summary_text)
+    summary_text = summary_text.strip()
+
     claims_data = data.get("claims", [])
+    if not isinstance(claims_data, list):
+        claims_data = []
 
     if not summary_text:
         return generate_local_embedding_summary(paper_id, chunks)
@@ -242,11 +258,22 @@ async def generate_cited_summary(
     valid_chunk_ids = {c.id for c in chunks}
 
     for idx, claim_item in enumerate(claims_data):
-        claim_str = claim_item.get("claim", "").strip()
+        if isinstance(claim_item, str):
+            claim_str = claim_item.strip()
+            cids = []
+        elif isinstance(claim_item, dict):
+            raw_claim = claim_item.get("claim", "")
+            if isinstance(raw_claim, list):
+                claim_str = " ".join(str(c) for c in raw_claim).strip()
+            else:
+                claim_str = str(raw_claim).strip()
+            cids = claim_item.get("supporting_chunk_ids", [])
+        else:
+            continue
+
         if not claim_str:
             continue
 
-        cids = claim_item.get("supporting_chunk_ids", [])
         parsed_cids = []
         for cid in cids:
             try:
