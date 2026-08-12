@@ -368,8 +368,8 @@ async def test_verifier_context_truncation_prioritizes_cited_chunks():
             
             # Verify call_groq was invoked
             assert mock_call_groq.call_count == 1
-            _, kwargs = mock_call_groq.call_args
-            user_prompt = kwargs.get("user_prompt", "")
+            args, kwargs = mock_call_groq.call_args
+            user_prompt = kwargs.get("user_prompt") or (args[1] if len(args) > 1 else "")
             
             # Explicitly assert cited chunk survived truncation and is present in prompt
             assert "Target cited content that must be included." in user_prompt
