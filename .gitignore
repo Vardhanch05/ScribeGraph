@@ -8,3 +8,6 @@ __pycache__/
 artifacts/
 *.db
 data/
+quantinsight/eval/eval_cache.json
+trash/
+

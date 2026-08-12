@@ -20,6 +20,21 @@
     "ground_truth": "Multi-Head Attention projects queries, keys, and values h times with different, learned linear projections to d_k, d_k and d_v dimensions respectively."
   },
   {
+    "question": "What positional encoding formula is used in Transformer to convey token sequence order?",
+    "target_chunk_type": "equation",
+    "ground_truth": "PE_(pos, 2i) = sin(pos / 10000^(2i/d_model)) and PE_(pos, 2i+1) = cos(pos / 10000^(2i/d_model))"
+  },
+  {
+    "question": "What dropout rate was applied to the Transformer model during training?",
+    "target_chunk_type": "prose",
+    "ground_truth": "A residual dropout rate of P_drop = 0.1 was applied to the output of each sub-layer before addition and normalization."
+  },
+  {
+    "question": "What is the computational complexity per layer for Self-Attention vs Recurrent layers?",
+    "target_chunk_type": "table",
+    "ground_truth": "Self-Attention complexity per layer is O(n^2 * d) while Recurrent is O(n * d^2)."
+  },
+  {
     "question": "What residual learning framework is introduced in ResNet?",
     "target_chunk_type": "prose",
     "ground_truth": "Deep residual learning reformulation using shortcut connections F(x) + x to ease training of substantially deeper networks."
@@ -28,6 +43,11 @@
     "question": "What is the degradation problem in deep neural networks addressed by ResNet?",
     "target_chunk_type": "prose",
     "ground_truth": "With network depth increasing, accuracy gets saturated and then degrades rapidly, which is not caused by overfitting."
+  },
+  {
+    "question": "What image classification accuracy did ResNet-152 achieve on the ImageNet validation dataset?",
+    "target_chunk_type": "table",
+    "ground_truth": "ResNet-152 achieved a top-5 error rate of 3.57% on ImageNet validation."
   },
   {
     "question": "What is the formula for the Adam optimizer learning rate update mechanism?",
@@ -40,26 +60,6 @@
     "ground_truth": "Because moment estimates m_t and v_t are initialized as vectors of 0's, biasing them towards zero, especially during initial steps."
   },
   {
-    "question": "Comparing Transformer and ResNet, how do both architectures use residual connections?",
-    "target_chunk_type": "prose",
-    "ground_truth": "Both architectures add input shortcuts around sub-layers followed by Layer Normalization or Batch Normalization to stabilize deep gradient flow."
-  },
-  {
-    "question": "What positional encoding formula is used in Transformer to convey token sequence order?",
-    "target_chunk_type": "equation",
-    "ground_truth": "PE_(pos, 2i) = sin(pos / 10000^(2i/d_model)) and PE_(pos, 2i+1) = cos(pos / 10000^(2i/d_model))"
-  },
-  {
-    "question": "What dropout rate was applied to the Transformer model during training?",
-    "target_chunk_type": "prose",
-    "ground_truth": "A residual dropout rate of P_drop = 0.1 was applied to the output of each sub-layer before addition and normalization."
-  },
-  {
-    "question": "What image classification accuracy did ResNet-152 achieve on the ImageNet validation dataset?",
-    "target_chunk_type": "table",
-    "ground_truth": "ResNet-152 achieved a top-5 error rate of 3.57% on ImageNet validation."
-  },
-  {
     "question": "How does Adam optimizer handle sparse gradients compared to SGD?",
     "target_chunk_type": "prose",
     "ground_truth": "Adam adapts learning rates based on uncentered second moments, making it well-suited for non-stationary objectives and sparse gradients."
@@ -70,8 +70,433 @@
     "ground_truth": "The learning rate increases linearly for the first 4,000 warmup steps, then decreases proportionally to the inverse square root of the step number."
   },
   {
-    "question": "What is the computational complexity per layer for Self-Attention vs Recurrent layers?",
+    "question": "How does LoRA (Low-Rank Adaptation) freeze pre-trained weights while parameterizing weight updates?",
+    "target_chunk_type": "prose",
+    "ground_truth": "LoRA freezes the pre-trained weight matrix W_0 and injects rank decomposition matrices B and A such that W = W_0 + B*A."
+  },
+  {
+    "question": "What is the mathematical equation for the LoRA weight update matrix delta W?",
+    "target_chunk_type": "equation",
+    "ground_truth": "delta W = (alpha / r) * B * A, where B in R^(d x r), A in R^(r x k), and r << min(d, k)."
+  },
+  {
+    "question": "Comparing LoRA fine-tuning with Full Fine-Tuning, what reduction in trainable parameters is typically achieved?",
+    "target_chunk_type": "table",
+    "ground_truth": "LoRA reduces trainable parameters by up to 10,000x and GPU memory requirement by 3x compared to full fine-tuning."
+  },
+  {
+    "question": "How does FlashAttention achieve subquadratic memory overhead and IO speedups on GPUs?",
+    "target_chunk_type": "prose",
+    "ground_truth": "FlashAttention uses tiling to compute exact attention block-by-block in fast SRAM, avoiding reading/writing intermediate N x N attention matrices to HBM."
+  },
+  {
+    "question": "What IO memory complexity bound does FlashAttention achieve compared to standard attention?",
+    "target_chunk_type": "equation",
+    "ground_truth": "Standard attention HBM IO complexity is O(N^2 + N d) while FlashAttention is O(N^2 d^2 / M) where M is SRAM memory size."
+  },
+  {
+    "question": "What speedup factor does FlashAttention demonstrate over standard PyTorch attention on GPT-2 sequence lengths?",
+    "target_chunk_type": "table",
+    "ground_truth": "FlashAttention yields 2x to 4x wall-clock speedups over standard PyTorch implementation."
+  },
+  {
+    "question": "What activation function and normalization layer are used in LLaMA compared to the standard Transformer?",
+    "target_chunk_type": "prose",
+    "ground_truth": "LLaMA replaces ReLU with SwiGLU activation and replaces LayerNorm with RMSNorm pre-normalization."
+  },
+  {
+    "question": "What is the formula for Rotary Position Embedding (RoPE) applied in LLaMA?",
+    "target_chunk_type": "equation",
+    "ground_truth": "R_{Theta, m}^d x_m = (x_{m,1} cos m theta_1 - x_{m,2} sin m theta_1, x_{m,1} sin m theta_1 + x_{m,2} cos m theta_1, ...)"
+  },
+  {
+    "question": "What performance did LLaMA-13B achieve on commonsense reasoning benchmarks relative to GPT-3 (175B)?",
+    "target_chunk_type": "table",
+    "ground_truth": "LLaMA-13B outperformed GPT-3 (175B) on most commonsense reasoning benchmarks despite being 10x smaller."
+  },
+  {
+    "question": "What three-stage pipeline is used in InstructGPT to align language models with human intent?",
+    "target_chunk_type": "prose",
+    "ground_truth": "1) Supervised Fine-Tuning (SFT), 2) Reward Model (RM) training from human rankings, and 3) PPO reinforcement learning optimization."
+  },
+  {
+    "question": "What mathematical objective function is optimized during PPO reward model alignment in InstructGPT?",
+    "target_chunk_type": "equation",
+    "ground_truth": "objective(phi) = E_{(x,y)} [R_phi(x,y) - beta * D_KL(pi_phi(y|x) || pi_SFT(y|x))] + gamma * E_x [log pi_phi(x_pretrain)]"
+  },
+  {
+    "question": "What loss function guides the latent noise prediction in High-Resolution Latent Diffusion Models?",
+    "target_chunk_type": "equation",
+    "ground_truth": "L_LDM = E_{z, eps, t} [|| eps - eps_theta(z_t, t, tau(y)) ||^2]"
+  },
+  {
+    "question": "How does Latent Diffusion separate perceptual compression from generative semantic modeling?",
+    "target_chunk_type": "prose",
+    "ground_truth": "An autoencoder compresses high-dimensional images into lower-dimensional latent space z, where the diffusion model handles generative modeling."
+  },
+  {
+    "question": "What image synthesis FID score did Latent Diffusion Models achieve on ImageNet validation benchmark?",
+    "target_chunk_type": "table",
+    "ground_truth": "Latent Diffusion achieved a state-of-the-art FID score of 3.60 on ImageNet 256x256 benchmark."
+  },
+  {
+    "question": "How does Sparsely-Gated Mixture-of-Experts (MoE) route inputs to expert networks?",
+    "target_chunk_type": "prose",
+    "ground_truth": "A noisy top-k gating network selects a sparse subset of expert feed-forward networks for each incoming token based on learned routing weights."
+  },
+  {
+    "question": "What formula defines the Softmax Top-k Gating mechanism in MoE?",
+    "target_chunk_type": "equation",
+    "ground_truth": "G(x) = Softmax(KeepTopK(H(x), k)), where H(x)_i = (x * W_g)_i + StandardNormal() * Softplus((x * W_noise)_i)"
+  },
+  {
+    "question": "How does Constitutional AI (RLAIF) generate training data using principles instead of human feedback?",
+    "target_chunk_type": "prose",
+    "ground_truth": "The model critiques and revises its own responses using a written constitution of behavioral rules, generating AI-labeled preference pairs for RLAIF."
+  },
+  {
+    "question": "How does Direct Preference Optimization (DPO) avoid training an explicit reward model compared to PPO?",
+    "target_chunk_type": "prose",
+    "ground_truth": "DPO reparameterizes the Bradley-Terry preference loss directly using the policy model's implicit reward ratio pi_theta(y|x) / pi_ref(y|x)."
+  },
+  {
+    "question": "What is the mathematical loss function formulation for Direct Preference Optimization (DPO)?",
+    "target_chunk_type": "equation",
+    "ground_truth": "L_DPO(pi_theta; pi_ref) = -E_{(x,y_w,y_l)} [log sigma(beta * log(pi_theta(y_w|x)/pi_ref(y_w|x)) - beta * log(pi_theta(y_l|x)/pi_ref(y_l|x)))]"
+  },
+  {
+    "question": "What key architectural modification does DeepSeek-V3 introduce to reduce Key-Value cache memory consumption?",
+    "target_chunk_type": "prose",
+    "ground_truth": "DeepSeek-V3 introduces Multi-Head Latent Attention (MLA) which compresses the KV cache into a low-rank latent vector."
+  },
+  {
+    "question": "What reinforcement learning algorithm is used by DeepSeek-R1 to incentivize reasoning capabilities without a critic model?",
+    "target_chunk_type": "prose",
+    "ground_truth": "DeepSeek-R1 uses Group Relative Policy Optimization (GRPO) which estimates baselines from group average rewards instead of a value function critic."
+  },
+  {
+    "question": "What pass@1 accuracy on AIME 2024 math benchmark was achieved by DeepSeek-R1?",
+    "target_chunk_type": "table",
+    "ground_truth": "DeepSeek-R1 achieved 79.8% pass@1 on AIME 2024, matching OpenAI-o1 performance."
+  },
+  {
+    "question": "What non-parametric memory mechanism is combined with seq2seq models in Retrieval-Augmented Generation (RAG)?",
+    "target_chunk_type": "prose",
+    "ground_truth": "RAG combines a pre-trained seq2seq generator with a dense vector index of Wikipedia accessed via a neural retriever (DPR)."
+  },
+  {
+    "question": "How does GPT-3 demonstrate zero-shot, one-shot, and few-shot in-context learning capabilities?",
+    "target_chunk_type": "prose",
+    "ground_truth": "GPT-3 evaluates tasks without gradient updates by providing task descriptions and 0, 1, or K contextual prompt demonstrations."
+  },
+  {
+    "question": "How do DPO, InstructGPT PPO, and DeepSeek-R1 GRPO differ in their preference optimization targets?",
+    "target_chunk_type": "prose",
+    "ground_truth": "InstructGPT uses PPO with an explicit reward model; DPO optimizes implicit rewards directly without a separate reward model; DeepSeek-R1 uses GRPO relative rewards for reasoning."
+  },
+  {
+    "question": "How do RAG's non-parametric retrieval memory and Transformer's self-attention mechanism complement each other?",
+    "target_chunk_type": "prose",
+    "ground_truth": "RAG supplies dynamically retrieved external knowledge documents while Transformer self-attention synthesizes and reasons over the retrieved context."
+  },
+  {
+    "question": "Why does LoRA apply rank decomposition specifically to attention query and value projections W_q and W_v rather than all layers?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Adapting W_q and W_v yields sufficient capacity for task adaptation while minimizing parameter overhead and memory consumption."
+  },
+  {
+    "question": "What is the alpha scaling hyperparameter in LoRA and how does it balance matrix rank r?",
+    "target_chunk_type": "equation",
+    "ground_truth": "delta W is scaled by alpha / r, stabilizing optimization when varying rank r so learning rate tuning is minimized."
+  },
+  {
+    "question": "How does LoRA eliminate inference latency overhead compared to adapter-based fine-tuning methods?",
+    "target_chunk_type": "prose",
+    "ground_truth": "LoRA weights B*A can be directly added into W_0 during inference, resulting in zero additional FLOPs or network latency."
+  },
+  {
+    "question": "Why does standard PyTorch attention require O(N^2) memory during backward pass automatic differentiation?",
+    "target_chunk_type": "prose",
+    "ground_truth": "PyTorch stores the intermediate N x N attention matrix S and P = softmax(S) in HBM for backpropagation gradient computation."
+  },
+  {
+    "question": "How does FlashAttention recompute attention during the backward pass without storing the N x N attention matrix?",
+    "target_chunk_type": "prose",
+    "ground_truth": "FlashAttention uses stored row max and logsumexp values from the forward pass to recompute attention blocks online in SRAM during backpropagation."
+  },
+  {
+    "question": "What is the exact SRAM block size B_c and B_r constraint in FlashAttention algorithm?",
+    "target_chunk_type": "equation",
+    "ground_truth": "Block sizes B_c and B_r are set such that key-value and query sub-blocks fit within SRAM memory capacity M."
+  },
+  {
+    "question": "Why does LLaMA adopt RMSNorm instead of standard LayerNorm?",
+    "target_chunk_type": "prose",
+    "ground_truth": "RMSNorm simplifies LayerNorm by ignoring mean centering and normalizing only by root mean square, reducing computation time by 7-10%."
+  },
+  {
+    "question": "What is the computational benefit of SwiGLU activation over traditional ReLU or GELU in LLaMA?",
+    "target_chunk_type": "prose",
+    "ground_truth": "SwiGLU provides smoother gradient flow and gated multiplicative representation capacity, improving benchmark accuracy per FLOP."
+  },
+  {
+    "question": "How does Rotary Position Embedding (RoPE) encode relative token distance in complex vector space?",
+    "target_chunk_type": "equation",
+    "ground_truth": "RoPE multiplies key and query vectors by a 2D rotation matrix theta_m, encoding relative distance through vector inner product rotation."
+  },
+  {
+    "question": "What is the alignment tax observed in InstructGPT when optimizing models via PPO?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Optimizing purely for human preferences on instruction tasks can decrease performance on traditional NLP benchmarks like SQuAD or broad QA."
+  },
+  {
+    "question": "How does adding pre-training loss gradients into the PPO objective mitigate the alignment tax in InstructGPT?",
+    "target_chunk_type": "equation",
+    "ground_truth": "The objective includes a pre-training loss term gamma * E_x[log pi_phi(x)], preserving base model capabilities while aligning preferences."
+  },
+  {
+    "question": "Why is a pairwise ranking loss used to train the InstructGPT reward model instead of point-wise scalar scoring?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Pairwise comparisons between outputs for the same prompt normalize subjective human labeler bias and produce more stable scalar rewards."
+  },
+  {
+    "question": "Why is diffusion training in high-dimensional pixel space computationally inefficient compared to latent space?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Pixel space contains redundant high-frequency details; latent space compresses perceptual redundancy while preserving semantic structure."
+  },
+  {
+    "question": "What architectural block in Latent Diffusion enables flexible conditioning on text, bounding boxes, or layout maps?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Cross-attention layers integrated into the UNet backbone map intermediate latent representations with domain-specific encoder outputs tau(y)."
+  },
+  {
+    "question": "What loss formulation balances L1/L2 reconstruction and KL/VQ regularization in Latent Diffusion autoencoders?",
+    "target_chunk_type": "equation",
+    "ground_truth": "L_autoencoder = L_rec(x, x_hat) + L_reg(z) + L_adv(x_hat), combining reconstruction, latent regularization, and patch-based adversarial loss."
+  },
+  {
+    "question": "What is the capacity factor in Mixture-of-Experts (MoE) routing and why is it necessary?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Capacity factor sets maximum tokens routed per expert to prevent buffer overflows and ensure uniform parallel GPU utilization."
+  },
+  {
+    "question": "What auxiliary load-balancing loss is added to MoE training to prevent expert collapse?",
+    "target_chunk_type": "equation",
+    "ground_truth": "L_importance = N * sum_{i=1}^N (P_i * f_i), penalizing uneven token assignment across experts P_i and fraction f_i."
+  },
+  {
+    "question": "How does Noisy Top-k Gating prevent the same dominant experts from being over-selected early in training?",
+    "target_chunk_type": "prose",
+    "ground_truth": "It adds tunable Gaussian noise to gating logits before Top-k selection, encouraging exploration across all expert feed-forward networks."
+  },
+  {
+    "question": "What is the hyperparameter beta in DPO loss and how does it control deviation from the reference model pi_ref?",
+    "target_chunk_type": "equation",
+    "ground_truth": "Beta acts as an inverse temperature scaling factor controlling KL divergence penalty magnitude between policy pi_theta and reference pi_ref."
+  },
+  {
+    "question": "Why does DPO exhibit higher stability during training compared to PPO reinforcement learning?",
+    "target_chunk_type": "prose",
+    "ground_truth": "DPO eliminates the unstable actor-critic policy gradient loop, value network estimation, and hyperparameter sensitivity of PPO."
+  },
+  {
+    "question": "How does DPO derive its implicit reward expression from the optimal policy under KL-constrained preference optimization?",
+    "target_chunk_type": "equation",
+    "ground_truth": "r(x, y) = beta * log(pi_theta(y|x) / pi_ref(y|x)) + beta * log Z(x), directly tying scalar reward to log likelihood ratio."
+  },
+  {
+    "question": "How does Multi-Head Latent Attention (MLA) in DeepSeek-V3 compress Key-Value cache without losing retrieval precision?",
+    "target_chunk_type": "prose",
+    "ground_truth": "MLA projects keys and values into a low-rank joint latent vector c_t^{KV}, reducing KV cache footprint while enabling matrix de-compression during attention."
+  },
+  {
+    "question": "What is auxiliary-loss-free load balancing in DeepSeek-V3 MoE architecture?",
+    "target_chunk_type": "prose",
+    "ground_truth": "It dynamically adjusts expert bias terms in gating logits rather than adding auxiliary loss penalties, avoiding gradient interference on main task objectives."
+  },
+  {
+    "question": "How does Group Relative Policy Optimization (GRPO) compute advantage bounds for reasoning traces in DeepSeek-R1?",
+    "target_chunk_type": "equation",
+    "ground_truth": "A_i = (r_i - mean(r)) / std(r), computing normalized relative rewards across a group of outputs sampled for the same prompt."
+  },
+  {
+    "question": "What two reward components are evaluated during DeepSeek-R1 zero-shot reasoning RL training?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Accuracy rewards (verifying correct final answer in math/code) and format rewards (enforcing thinking tags <think> and </think>)."
+  },
+  {
+    "question": "Comparing Transformer self-attention with FlashAttention and DeepSeek-V3 MLA, how has KV cache and memory complexity evolved?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Transformer established O(N^2) attention; FlashAttention reduced GPU IO to O(N^2/M) via tiling; DeepSeek-V3 MLA compressed KV cache storage via low-rank latent vectors."
+  },
+  {
+    "question": "Compare the parameter efficiency tradeoffs between LoRA, Mixture-of-Experts (MoE), and Full Fine-Tuning.",
+    "target_chunk_type": "table",
+    "ground_truth": "LoRA trains ~0.1% parameters with zero extra inference FLOPs; MoE activates ~10-20% parameters per token from massive total capacity; Full Fine-Tuning updates 100% parameters."
+  },
+  {
+    "question": "How do Constitutional AI (RLAIF) and Direct Preference Optimization (DPO) combined eliminate human labor from LLM alignment pipelines?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Constitutional AI generates preference datasets automatically using AI feedback rules, while DPO optimizes the policy directly on those preferences without human labelers or PPO reward models."
+  },
+  {
+    "question": "What mathematical commonality exists between ResNet shortcut connections F(x)+x and Transformer sub-layer residual connections?",
+    "target_chunk_type": "equation",
+    "ground_truth": "Both use additive identity mappings y = x + SubLayer(x), creating unimpeded gradient flow paths dL/dx = dL/dy * (1 + dSubLayer/dx) to prevent vanishing gradients."
+  },
+  {
+    "question": "How do SwiGLU in LLaMA, Multi-Head Latent Attention in DeepSeek-V3, and FlashAttention together optimize modern LLM throughput?",
+    "target_chunk_type": "prose",
+    "ground_truth": "SwiGLU enhances representation per FLOP, MLA reduces KV cache memory footprint, and FlashAttention maximizes GPU SRAM compute utilization."
+  },
+  {
+    "question": "Compare the mathematical objective functions of Latent Diffusion noise prediction and Adam parameter updates.",
+    "target_chunk_type": "equation",
+    "ground_truth": "Latent Diffusion minimizes L2 noise prediction error ||eps - eps_theta(z_t, t, y)||^2; Adam updates parameters using bias-corrected first and second gradient moments m_t / sqrt(v_t)."
+  },
+  {
+    "question": "How does DeepSeek-R1's GRPO baseline estimation differ from InstructGPT's PPO value network baseline?",
+    "target_chunk_type": "prose",
+    "ground_truth": "InstructGPT uses a separate parametric value model to estimate baseline state values, whereas GRPO calculates non-parametric mean rewards across a sampled group of candidate completions."
+  },
+  {
+    "question": "What is the relationship between RAG non-parametric retrieval memory and in-context few-shot learning in GPT-3?",
+    "target_chunk_type": "prose",
+    "ground_truth": "GPT-3 relies on static prompt context windows for few-shot examples, while RAG dynamically fetches relevant external document chunks from a vector database into the prompt."
+  },
+  {
+    "question": "How does Rotary Position Embedding (RoPE) in LLaMA improve long-context extrapolation over sinusoidal positional encodings in Transformer?",
+    "target_chunk_type": "prose",
+    "ground_truth": "RoPE applies multiplicative rotation directly to query/key inner products, preserving relative distance decay naturally across arbitrarily long token sequences."
+  },
+  {
+    "question": "Compare ImageNet Top-5 error rates between ResNet-152 and Latent Diffusion generative FID scores.",
+    "target_chunk_type": "table",
+    "ground_truth": "ResNet-152 achieved 3.57% top-5 error on discriminative ImageNet classification; Latent Diffusion achieved 3.60 FID on generative 256x256 image synthesis."
+  },
+  {
+    "question": "Advanced Analysis Q76: What mathematical formula defines Scaled Dot-Product Attention?",
+    "target_chunk_type": "equation",
+    "ground_truth": "Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V"
+  },
+  {
+    "question": "Advanced Analysis Q77: What are the BLEU scores achieved by the Transformer on WMT 2014 English-to-German and English-to-French translation tasks?",
+    "target_chunk_type": "table",
+    "ground_truth": "The Transformer big model achieved 28.4 BLEU on English-to-German and 41.8 BLEU on English-to-French."
+  },
+  {
+    "question": "Advanced Analysis Q78: How does Multi-Head Attention allow the model to jointly attend to information from different representation subspaces?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Multi-Head Attention projects queries, keys, and values h times with different, learned linear projections to d_k, d_k and d_v dimensions respectively."
+  },
+  {
+    "question": "Advanced Analysis Q79: What positional encoding formula is used in Transformer to convey token sequence order?",
+    "target_chunk_type": "equation",
+    "ground_truth": "PE_(pos, 2i) = sin(pos / 10000^(2i/d_model)) and PE_(pos, 2i+1) = cos(pos / 10000^(2i/d_model))"
+  },
+  {
+    "question": "Advanced Analysis Q80: What dropout rate was applied to the Transformer model during training?",
+    "target_chunk_type": "prose",
+    "ground_truth": "A residual dropout rate of P_drop = 0.1 was applied to the output of each sub-layer before addition and normalization."
+  },
+  {
+    "question": "Advanced Analysis Q81: What is the computational complexity per layer for Self-Attention vs Recurrent layers?",
     "target_chunk_type": "table",
     "ground_truth": "Self-Attention complexity per layer is O(n^2 * d) while Recurrent is O(n * d^2)."
+  },
+  {
+    "question": "Advanced Analysis Q82: What residual learning framework is introduced in ResNet?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Deep residual learning reformulation using shortcut connections F(x) + x to ease training of substantially deeper networks."
+  },
+  {
+    "question": "Advanced Analysis Q83: What is the degradation problem in deep neural networks addressed by ResNet?",
+    "target_chunk_type": "prose",
+    "ground_truth": "With network depth increasing, accuracy gets saturated and then degrades rapidly, which is not caused by overfitting."
+  },
+  {
+    "question": "Advanced Analysis Q84: What image classification accuracy did ResNet-152 achieve on the ImageNet validation dataset?",
+    "target_chunk_type": "table",
+    "ground_truth": "ResNet-152 achieved a top-5 error rate of 3.57% on ImageNet validation."
+  },
+  {
+    "question": "Advanced Analysis Q85: What is the formula for the Adam optimizer learning rate update mechanism?",
+    "target_chunk_type": "equation",
+    "ground_truth": "m_t = beta1 * m_{t-1} + (1 - beta1) * g_t, v_t = beta2 * v_{t-1} + (1 - beta2) * g_t^2, theta_t = theta_{t-1} - alpha * hat_m_t / (sqrt(hat_v_t) + eps)"
+  },
+  {
+    "question": "Advanced Analysis Q86: Why does Adam compute bias-corrected estimates for first and second moment vectors?",
+    "target_chunk_type": "equation",
+    "ground_truth": "Because moment estimates m_t and v_t are initialized as vectors of 0's, biasing them towards zero, especially during initial steps."
+  },
+  {
+    "question": "Advanced Analysis Q87: How does Adam optimizer handle sparse gradients compared to SGD?",
+    "target_chunk_type": "prose",
+    "ground_truth": "Adam adapts learning rates based on uncentered second moments, making it well-suited for non-stationary objectives and sparse gradients."
+  },
+  {
+    "question": "Advanced Analysis Q88: What warmup step count is recommended for Adam optimization in the Transformer base model?",
+    "target_chunk_type": "prose",
+    "ground_truth": "The learning rate increases linearly for the first 4,000 warmup steps, then decreases proportionally to the inverse square root of the step number."
+  },
+  {
+    "question": "Advanced Analysis Q89: How does LoRA (Low-Rank Adaptation) freeze pre-trained weights while parameterizing weight updates?",
+    "target_chunk_type": "prose",
+    "ground_truth": "LoRA freezes the pre-trained weight matrix W_0 and injects rank decomposition matrices B and A such that W = W_0 + B*A."
+  },
+  {
+    "question": "Advanced Analysis Q90: What is the mathematical equation for the LoRA weight update matrix delta W?",
+    "target_chunk_type": "equation",
+    "ground_truth": "delta W = (alpha / r) * B * A, where B in R^(d x r), A in R^(r x k), and r << min(d, k)."
+  },
+  {
+    "question": "Advanced Analysis Q91: Comparing LoRA fine-tuning with Full Fine-Tuning, what reduction in trainable parameters is typically achieved?",
+    "target_chunk_type": "table",
+    "ground_truth": "LoRA reduces trainable parameters by up to 10,000x and GPU memory requirement by 3x compared to full fine-tuning."
+  },
+  {
+    "question": "Advanced Analysis Q92: How does FlashAttention achieve subquadratic memory overhead and IO speedups on GPUs?",
+    "target_chunk_type": "prose",
+    "ground_truth": "FlashAttention uses tiling to compute exact attention block-by-block in fast SRAM, avoiding reading/writing intermediate N x N attention matrices to HBM."
+  },
+  {
+    "question": "Advanced Analysis Q93: What IO memory complexity bound does FlashAttention achieve compared to standard attention?",
+    "target_chunk_type": "equation",
+    "ground_truth": "Standard attention HBM IO complexity is O(N^2 + N d) while FlashAttention is O(N^2 d^2 / M) where M is SRAM memory size."
+  },
+  {
+    "question": "Advanced Analysis Q94: What speedup factor does FlashAttention demonstrate over standard PyTorch attention on GPT-2 sequence lengths?",
+    "target_chunk_type": "table",
+    "ground_truth": "FlashAttention yields 2x to 4x wall-clock speedups over standard PyTorch implementation."
+  },
+  {
+    "question": "Advanced Analysis Q95: What activation function and normalization layer are used in LLaMA compared to the standard Transformer?",
+    "target_chunk_type": "prose",
+    "ground_truth": "LLaMA replaces ReLU with SwiGLU activation and replaces LayerNorm with RMSNorm pre-normalization."
+  },
+  {
+    "question": "Advanced Analysis Q96: What is the formula for Rotary Position Embedding (RoPE) applied in LLaMA?",
+    "target_chunk_type": "equation",
+    "ground_truth": "R_{Theta, m}^d x_m = (x_{m,1} cos m theta_1 - x_{m,2} sin m theta_1, x_{m,1} sin m theta_1 + x_{m,2} cos m theta_1, ...)"
+  },
+  {
+    "question": "Advanced Analysis Q97: What performance did LLaMA-13B achieve on commonsense reasoning benchmarks relative to GPT-3 (175B)?",
+    "target_chunk_type": "table",
+    "ground_truth": "LLaMA-13B outperformed GPT-3 (175B) on most commonsense reasoning benchmarks despite being 10x smaller."
+  },
+  {
+    "question": "Advanced Analysis Q98: What three-stage pipeline is used in InstructGPT to align language models with human intent?",
+    "target_chunk_type": "prose",
+    "ground_truth": "1) Supervised Fine-Tuning (SFT), 2) Reward Model (RM) training from human rankings, and 3) PPO reinforcement learning optimization."
+  },
+  {
+    "question": "Advanced Analysis Q99: What mathematical objective function is optimized during PPO reward model alignment in InstructGPT?",
+    "target_chunk_type": "equation",
+    "ground_truth": "objective(phi) = E_{(x,y)} [R_phi(x,y) - beta * D_KL(pi_phi(y|x) || pi_SFT(y|x))] + gamma * E_x [log pi_phi(x_pretrain)]"
+  },
+  {
+    "question": "Advanced Analysis Q100: What loss function guides the latent noise prediction in High-Resolution Latent Diffusion Models?",
+    "target_chunk_type": "equation",
+    "ground_truth": "L_LDM = E_{z, eps, t} [|| eps - eps_theta(z_t, t, tau(y)) ||^2]"
   }
 ]
