@@ -157,3 +157,54 @@ def test_query_success(mock_run, client):
     data = response.json()
     assert data["answer"] == "Attention is all you need."
     assert len(data["trace"]) == 1
+
+
+@patch("quantinsight.api.routes.query.workflow.compile")
+def test_query_stream_error_handling(mock_compile, client):
+    mock_app = AsyncMock()
+    
+    async def failing_astream(*args, **kwargs):
+        raise RuntimeError("Simulated SSE pipeline failure")
+        yield {}  # make it an async generator
+
+    mock_app.astream = failing_astream
+    mock_compile.return_value = mock_app
+
+    response = client.post(
+        "/query/stream",
+        json={"query": "What is attention?", "paper_ids": []},
+    )
+    assert response.status_code == 200
+    text = response.text
+    assert "event: error" in text
+    assert "Simulated SSE pipeline failure" in text
+
+
+@pytest.mark.anyio
+async def test_mcp_invalid_uuid_handling():
+    from quantinsight.mcp_server.server import (
+        ask_quantinsight,
+        get_equation_context,
+        get_paper_summary,
+        search_papers,
+    )
+
+    invalid_uuid = "invalid-uuid-string"
+
+    res_search = await search_papers(query="test", paper_ids=[invalid_uuid])
+    assert len(res_search) == 1
+    assert "error" in res_search[0]
+    assert "Invalid paper_id UUID format" in res_search[0]["error"]
+
+    res_summary = await get_paper_summary(paper_id=invalid_uuid)
+    assert "error" in res_summary
+    assert "Invalid paper_id UUID format" in res_summary["error"]
+
+    res_eq = await get_equation_context(paper_id=invalid_uuid)
+    assert "error" in res_eq
+    assert "Invalid paper_id UUID format" in res_eq["error"]
+
+    res_ask = await ask_quantinsight(query="test", paper_ids=[invalid_uuid])
+    assert "error" in res_ask
+    assert "Invalid paper_id UUID format" in res_ask["error"]
+

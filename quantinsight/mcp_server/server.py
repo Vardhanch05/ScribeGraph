@@ -21,8 +21,15 @@ async def search_papers(query: str, paper_ids: list[str] | None = None) -> list[
         query: Semantic query text
         paper_ids: Optional list of paper UUID strings to restrict search scope
     """
-    parsed_ids = [UUID(pid) for pid in paper_ids] if paper_ids else None
-    results = await search(query=query, paper_ids=parsed_ids)
+    parsed_ids = []
+    if paper_ids:
+        for pid in paper_ids:
+            try:
+                parsed_ids.append(UUID(pid))
+            except (ValueError, TypeError):
+                return [{"error": f"Invalid paper_id UUID format: '{pid}'"}]
+
+    results = await search(query=query, paper_ids=parsed_ids if paper_ids else None)
     
     formatted_results = []
     for item in results:
@@ -41,14 +48,19 @@ async def get_paper_summary(paper_id: str) -> dict:
     Args:
         paper_id: Paper UUID string
     """
-    summary = fetch_paper_summary(UUID(paper_id))
+    try:
+        pid_uuid = UUID(paper_id)
+    except (ValueError, TypeError):
+        return {"error": f"Invalid paper_id UUID format: '{paper_id}'"}
+
+    summary = fetch_paper_summary(pid_uuid)
     if not summary:
         return {"error": f"No summary found for paper_id {paper_id}"}
     return summary.model_dump(mode="json")
 
 
 @mcp.tool()
-async def get_equation_context(paper_id: str, equation_label: str | None = None) -> list[dict]:
+async def get_equation_context(paper_id: str, equation_label: str | None = None) -> list[dict] | dict:
     """
     Look up equation units and LaTeX representations for a given paper.
     
@@ -56,7 +68,12 @@ async def get_equation_context(paper_id: str, equation_label: str | None = None)
         paper_id: Paper UUID string
         equation_label: Optional label (e.g. 'eq. 1', '(1)') to filter
     """
-    equations = get_equations_by_paper(UUID(paper_id))
+    try:
+        pid_uuid = UUID(paper_id)
+    except (ValueError, TypeError):
+        return {"error": f"Invalid paper_id UUID format: '{paper_id}'"}
+
+    equations = get_equations_by_paper(pid_uuid)
     if equation_label:
         filtered = [
             eq for eq in equations
@@ -77,7 +94,14 @@ async def ask_quantinsight(query: str, paper_ids: list[str] | None = None) -> di
         query: Question to ask the ScribeGraph agent
         paper_ids: Optional list of paper UUID strings
     """
-    parsed_ids = [UUID(pid) for pid in paper_ids] if paper_ids else []
+    parsed_ids = []
+    if paper_ids:
+        for pid in paper_ids:
+            try:
+                parsed_ids.append(UUID(pid))
+            except (ValueError, TypeError):
+                return {"error": f"Invalid paper_id UUID format: '{pid}'"}
+
     response = await run_agent(query=query, paper_ids=parsed_ids)
     return response.model_dump(mode="json")
 
