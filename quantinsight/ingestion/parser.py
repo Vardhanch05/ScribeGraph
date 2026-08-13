@@ -34,7 +34,8 @@ def _load_cache() -> dict:
         try:
             with open(CACHE_FILE, "r") as f:
                 return json.load(f)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to read cache.json, resetting cache: {e}")
             return {}
     return {}
 

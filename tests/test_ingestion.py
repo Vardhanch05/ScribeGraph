@@ -198,3 +198,53 @@ async def test_parse_pdf_arxiv_caching_and_expiration(
     assert result3 == "New text post expiration"
     mock_parser_instance.aload_data.assert_called_once()
     mock_fetch_arxiv.assert_called_once_with(arxiv_id)
+
+
+@pytest.mark.anyio
+@patch("quantinsight.ingestion.pipeline.generate_cited_summary")
+@patch("quantinsight.ingestion.pipeline.parse_pdf")
+async def test_idempotent_reingest_cleans_chroma_and_sqlite(
+    mock_parse_pdf, mock_generate_summary
+):
+    from quantinsight.ingestion.pipeline import ingest_paper
+    from quantinsight.schemas.models import CitedSummary
+    from quantinsight.storage.chroma_store import get_chroma_client
+
+    arxiv_id = "test.99999"
+    mock_parse_pdf.return_value = "Page 1 content.\n\n--- Page Break ---\nPage 2 content.\n\n--- Page Break ---\nPage 3 content."
+
+    def create_mock_summary(paper_id, **kwargs):
+        from datetime import UTC, datetime
+        return CitedSummary(
+            id=uuid4(),
+            paper_id=paper_id,
+            summary="Test summary",
+            key_claims=[],
+            supporting_chunk_ids=[],
+            generated_at=datetime.now(UTC),
+            model_used="mock",
+        )
+
+    mock_generate_summary.side_effect = create_mock_summary
+
+    paper_id, _ = await ingest_paper(arxiv_id=arxiv_id, api_key="fake")
+
+    client = get_chroma_client()
+    coll = client.get_collection("prose_chunks")
+    res1 = coll.get(where={"paper_id": str(paper_id)})
+    initial_ids = set(res1["ids"])
+    assert len(initial_ids) == 3
+
+    # Re-ingest with only 1 chunk
+    mock_parse_pdf.return_value = "Single page reingested content."
+    await ingest_paper(arxiv_id=arxiv_id, api_key="fake")
+
+    res2 = coll.get(where={"paper_id": str(paper_id)})
+    new_ids = set(res2["ids"])
+    assert len(new_ids) == 1
+    # Old chunks 1 and 2 must no longer be present in ChromaDB
+    removed_ids = initial_ids - new_ids
+    assert len(removed_ids) == 2
+    for old_id in removed_ids:
+        assert old_id not in new_ids
+

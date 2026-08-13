@@ -4,7 +4,6 @@ venv/
 __pycache__/
 *.pyc
 .env
-.env.example
 artifacts/
 *.db
 data/

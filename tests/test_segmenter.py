@@ -110,3 +110,25 @@ def test_segment_markdown_table_warnings():
         ["Row 2 Col 1", ""],
         ["Row 3 Col 1", "Row 3 Col 2"],
     ]
+
+
+def test_segment_markdown_latex_environments():
+    raw_md = """Prose introduction.
+\\begin{equation*}
+\\alpha = \\beta + \\gamma
+\\end{equation*}
+Prose middle.
+\\begin{gather}
+x + y = z
+\\end{gather}
+Prose end.
+"""
+    paper_id = uuid4()
+    chunks, _tables, equations, _warnings = segment_markdown(raw_md, paper_id)
+
+    assert len(equations) == 2
+    eq_chunks = [c for c in chunks if c.chunk_type == ChunkType.EQUATION]
+    assert len(eq_chunks) == 2
+    assert "\\alpha = \\beta + \\gamma" in eq_chunks[0].content
+    assert "x + y = z" in eq_chunks[1].content
+

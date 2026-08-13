@@ -86,18 +86,20 @@ def segment_markdown(
             is_eq_start = False
             eq_end_pattern = None
 
+            math_env_match = re.search(
+                r"\\begin\{(equation|align|gather|eqnarray|multline|alignat)\*?\}",
+                line_strip,
+            )
             if "$$" in line_strip:
                 is_eq_start = True
                 eq_end_pattern = r"\$\$"
             elif r"\[" in line_strip:
                 is_eq_start = True
                 eq_end_pattern = r"\\\]"
-            elif r"\begin{equation" in line_strip:
+            elif math_env_match:
+                env_name = math_env_match.group(1)
                 is_eq_start = True
-                eq_end_pattern = r"\\end\{equation"
-            elif r"\begin{align" in line_strip:
-                is_eq_start = True
-                eq_end_pattern = r"\\end\{align"
+                eq_end_pattern = r"\\end\{" + env_name + r"\*?\}"
             elif line_strip.startswith("$") and line_strip.endswith("$") and len(line_strip) > 2:
                 is_eq_start = True
                 eq_end_pattern = None  # Single line equation
@@ -246,8 +248,14 @@ def segment_markdown(
                 if not next_line_strip:
                     break
                 # Check for new block types
-                if next_line_strip.startswith(
-                    ("$$", r"\[", r"\begin{equation}", r"\begin{align}")
+                if (
+                    next_line_strip.startswith(("$$", r"\["))
+                    or bool(
+                        re.search(
+                            r"^\\begin\{(equation|align|gather|eqnarray|multline|alignat)\*?\}",
+                            next_line_strip,
+                        )
+                    )
                 ):
                     break
                 if (
