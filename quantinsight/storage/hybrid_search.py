@@ -81,6 +81,7 @@ def build_bm25_index(force_rebuild: bool = False):
 def search_bm25(
     query: str,
     paper_ids: list[UUID] | None = None,
+    chunk_types: list[ChunkType] | None = None,
     limit: int = 15,
 ) -> list[tuple[UUID, str, float]]:
     """Execute sparse BM25 keyword search over indexed documents."""
@@ -94,6 +95,11 @@ def search_bm25(
 
     scores = _bm25_index.get_scores(tokens)
     paper_ids_str = {str(pid) for pid in paper_ids} if paper_ids else None
+    allowed_types = (
+        {ct.value if hasattr(ct, "value") else str(ct) for ct in chunk_types}
+        if chunk_types
+        else None
+    )
 
     results: list[tuple[UUID, str, float]] = []
     for idx, score in enumerate(scores):
@@ -101,6 +107,8 @@ def search_bm25(
             continue
         item_id, item_type, paper_id_str, _ = _bm25_items[idx]
         if paper_ids_str and paper_id_str not in paper_ids_str:
+            continue
+        if allowed_types and item_type not in allowed_types:
             continue
         results.append((item_id, item_type, float(score)))
 
@@ -128,7 +136,9 @@ async def hybrid_search(
     )
 
     # 2. Execute Sparse BM25 Search
-    bm25_results = search_bm25(query=query, paper_ids=paper_ids, limit=limit * 2)
+    bm25_results = search_bm25(
+        query=query, paper_ids=paper_ids, chunk_types=chunk_types, limit=limit * 2
+    )
 
     # 3. Reciprocal Rank Fusion (RRF) scoring map: id -> rrf_score
     rrf_scores: dict[UUID, float] = {}

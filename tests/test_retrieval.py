@@ -403,3 +403,109 @@ This is Paper B discussing residual skip connections.
     # 5. Query with paper_ids=[] (explicit empty list) -> assert this returns no results (empty list), distinct from None
     res_empty_list = await search(query="relational or skip", paper_ids=[])
     assert res_empty_list == []
+
+
+@pytest.mark.anyio
+async def test_retrieval_no_starvation(temp_chroma, temp_db, mock_ingestion_setup):
+    tables_md = "\n\n".join(
+        [
+            f"Table {i}: Results table {i}\n| Header A | Header B |\n|---|---|\n| Val {i} | Val {i+10} |"
+            for i in range(1, 6)
+        ]
+    )
+    markdown_content = f"# Section Results\nProse content section.\n\n{tables_md}"
+    mock_ingestion_setup(markdown_content)
+
+    paper_id, _ = await ingest_paper(
+        arxiv_id="2303.66666",
+        title="Multi Table Paper",
+        authors=["Alice"],
+        api_key="mock_key",
+        groq_api_key="mock_key",
+    )
+
+    limit = 3
+    results = await search(
+        query="Results table",
+        paper_ids=[paper_id],
+        chunk_types=[ChunkType.TABLE, ChunkType.PROSE],
+        limit=limit,
+    )
+    table_units = [r for r in results if isinstance(r, TableUnit)]
+    assert len(table_units) == limit
+
+
+@pytest.mark.anyio
+async def test_hybrid_bm25_dense_edge_cases(temp_chroma, temp_db, mock_ingestion_setup):
+    markdown_content = """# Section 1
+SpecializedKeyword12345 is introduced here in prose.
+"""
+    mock_ingestion_setup(markdown_content)
+    paper_id, _ = await ingest_paper(
+        arxiv_id="2303.55556",
+        title="Edge Case Paper",
+        authors=["Bob"],
+        api_key="mock_key",
+        groq_api_key="mock_key",
+    )
+
+    # 1. BM25 match with random non-dictionary word
+    from quantinsight.storage.hybrid_search import hybrid_search
+    res_bm25 = await hybrid_search(
+        query="SpecializedKeyword12345",
+        paper_ids=[paper_id],
+        limit=5,
+    )
+    assert len(res_bm25) > 0
+
+    # 2. General query with no exact BM25 keyword match
+    res_dense = await hybrid_search(
+        query="generic abstract discussion of techniques",
+        paper_ids=[paper_id],
+        limit=5,
+    )
+    assert len(res_dense) > 0
+
+
+@pytest.mark.anyio
+async def test_parent_child_prose_deduplication(temp_chroma, temp_db, mock_ingestion_setup):
+    markdown_content = """# Section 2: Shared Parent
+Shared introductory prose section for multiple tables.
+
+Table 1: First Table
+| A | B |
+|---|---|
+| 1 | 2 |
+
+Table 2: Second Table
+| C | D |
+|---|---|
+| 3 | 4 |
+"""
+    mock_ingestion_setup(markdown_content)
+    paper_id, _ = await ingest_paper(
+        arxiv_id="2303.44445",
+        title="Shared Parent Paper",
+        authors=["Charlie"],
+        api_key="mock_key",
+        groq_api_key="mock_key",
+    )
+
+    from quantinsight.agent.nodes.retriever import retriever_node
+
+    state = {
+        "query": "Table",
+        "paper_ids": [paper_id],
+        "retrieved_chunks": [],
+        "retrieved_tables": [],
+        "retrieved_equations": [],
+        "trace": [],
+    }
+
+    updated_state = await retriever_node(state)
+    retrieved_chunks = updated_state["retrieved_chunks"]
+
+    # Verify no duplicate chunk IDs exist in retrieved_chunks
+    chunk_ids = [c.id for c in retrieved_chunks]
+    assert len(chunk_ids) == len(set(chunk_ids))
+
