@@ -82,32 +82,37 @@ def segment_markdown(
                 i += 1
                 continue
 
-            # 1. Detect Block Equation
+            # 1. Detect Block or Standalone Equation
             is_eq_start = False
             eq_end_pattern = None
 
-            if line_strip.startswith("$$"):
+            if "$$" in line_strip:
                 is_eq_start = True
                 eq_end_pattern = r"\$\$"
-            elif line_strip.startswith(r"\["):
+            elif r"\[" in line_strip:
                 is_eq_start = True
                 eq_end_pattern = r"\\\]"
-            elif line_strip.startswith(r"\begin{equation}"):
+            elif r"\begin{equation" in line_strip:
                 is_eq_start = True
-                eq_end_pattern = r"\\end\{equation\}"
-            elif line_strip.startswith(r"\begin{align}"):
+                eq_end_pattern = r"\\end\{equation"
+            elif r"\begin{align" in line_strip:
                 is_eq_start = True
-                eq_end_pattern = r"\\end\{align\}"
+                eq_end_pattern = r"\\end\{align"
+            elif line_strip.startswith("$") and line_strip.endswith("$") and len(line_strip) > 2:
+                is_eq_start = True
+                eq_end_pattern = None  # Single line equation
+            elif any(token in line_strip for token in [r"\frac{", r"\text{softmax}", r"\sum_", r"\prod_", r"\mathbf{", r"\mathcal{", r"\mathbb{"]) and len(line_strip) > 10:
+                is_eq_start = True
+                eq_end_pattern = None  # Standalone math line
 
-            if is_eq_start and eq_end_pattern:
+            if is_eq_start:
                 eq_lines = [line]
                 start_line_num = i
 
-                # Check if closed on the same line
-                if (
-                    line_strip.startswith("$$")
+                if eq_end_pattern is None or (
+                    "$$" in line_strip
                     and len(line_strip) > 2
-                    and line_strip[2:].endswith("$$")
+                    and line_strip.count("$$") >= 2
                 ):
                     i += 1
                 else:
