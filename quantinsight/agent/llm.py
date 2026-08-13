@@ -89,7 +89,16 @@ def is_mock_enabled(api_key: Optional[str] = None) -> bool:
     )
 
 
-_depleted_models: set[str] = set()
+import time
+
+_depleted_models: dict[str, float] = {}
+DEPLETION_TTL_SECONDS = 300.0
+
+
+def reset_depleted_models() -> None:
+    """Reset all depleted model markers."""
+    global _depleted_models
+    _depleted_models.clear()
 
 
 def parse_retry_after(msg: str) -> float:
@@ -130,6 +139,12 @@ async def call_groq(
         "qwen/qwen3.6-27b",
         "allam-2-7b",
     ]
+
+    now = time.time()
+    expired = [m for m, ts in _depleted_models.items() if now - ts > DEPLETION_TTL_SECONDS]
+    for m in expired:
+        _depleted_models.pop(m, None)
+
     fallback_models = []
     for m in all_candidates:
         if m not in fallback_models and m not in _depleted_models:
@@ -153,7 +168,7 @@ async def call_groq(
                 is_context_limit = "413" in err_msg or "request too large" in err_msg
                 if is_tpd or is_context_limit:
                     logger.warning(f"Groq model '{candidate}' TPD/Context limit reached ({e}). Moving to next model.")
-                    _depleted_models.add(candidate)
+                    _depleted_models[candidate] = time.time()
                     last_exception = e
                     continue
 
@@ -175,7 +190,7 @@ async def call_groq(
                     except Exception as sub_e:
                         sub_msg = str(sub_e).lower()
                         if "tpd" in sub_msg or "tokens per day" in sub_msg or "413" in sub_msg or "request too large" in sub_msg:
-                            _depleted_models.add(candidate)
+                            _depleted_models[candidate] = time.time()
                             break
                         sub_sleep = parse_retry_after(sub_msg)
                         logger.warning(f"Retry attempt {attempt+1} hit limit on '{candidate}'. Sleeping {sub_sleep:.2f}s...")

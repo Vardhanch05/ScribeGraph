@@ -547,4 +547,188 @@ async def test_retrieval_no_starvation():
     assert len(table_results) > 0
 
 
+@pytest.mark.anyio
+async def test_agent_revision_cap_hard_limit(temp_chroma, temp_db, mock_ingestion_setup):
+    markdown_content = "# Section 1\nProse content."
+    mock_ingestion_setup(markdown_content)
+    paper_id, _ = await ingest_paper(
+        arxiv_id="2303.99991",
+        title="Cap Test Paper",
+        authors=["Alice"],
+        api_key="mock_key",
+        groq_api_key="mock_key",
+    )
+
+    with patch("quantinsight.agent.nodes.verifier.is_mock_enabled", return_value=False):
+        with patch("quantinsight.agent.nodes.verifier.call_groq", new_callable=AsyncMock) as mock_verifier_llm:
+            # Always force verifier to demand revision
+            mock_verifier_llm.return_value = '{"needs_revision": true, "verification_notes": ["Always needs revision."]}'
+            response = await run_agent("Test query requiring revision", paper_ids=[paper_id])
+
+            # Confirm loop terminated at revision cap 2
+            rev_steps = [s for s in response.trace if s.node_name == "Verifier"]
+            assert len(rev_steps) == 2
+            assert response.answer is not None
+
+
+@pytest.mark.anyio
+async def test_synthesizer_verifier_evidence_budget_parity():
+    from quantinsight.agent.nodes.synthesizer import synthesizer_node
+    from quantinsight.agent.nodes.verifier import verifier_node
+    from quantinsight.schemas.models import PaperChunk, ChunkType
+
+    paper_id = uuid4()
+    # Create evidence totaling ~11,000 characters (between 10k and 12k)
+    chunks = [
+        PaperChunk(
+            id=uuid4(),
+            paper_id=paper_id,
+            chunk_type=ChunkType.PROSE,
+            content=f"Chunk {i} " + ("Z" * 2000),
+            page_number=i,
+            order_index=i,
+        )
+        for i in range(5)
+    ]
+
+    state = {
+        "query": "Budget parity test query",
+        "draft_answer": f"Draft answer with citation [{chunks[4].id}]",
+        "retrieved_chunks": chunks,
+        "retrieved_tables": [],
+        "retrieved_equations": [],
+        "verification_notes": [],
+        "revision_count": 0,
+        "trace": [],
+    }
+
+    with patch("quantinsight.agent.nodes.verifier.is_mock_enabled", return_value=False):
+        with patch("quantinsight.agent.nodes.verifier.call_groq", new_callable=AsyncMock) as mock_verifier:
+            mock_verifier.return_value = '{"needs_revision": false, "verification_notes": ["OK"]}'
+            await verifier_node(state)
+            
+            # Verify 5th chunk (at ~10,000 char threshold) was included in Verifier prompt
+            _, kwargs = mock_verifier.call_args
+            prompt = kwargs.get("user_prompt", "")
+            assert str(chunks[4].id) in prompt
+
+    synth_state = dict(state)
+    synth_state["draft_answer"] = None
+
+    with patch("quantinsight.agent.nodes.synthesizer.is_mock_enabled", return_value=False):
+        with patch("quantinsight.agent.nodes.synthesizer.call_groq", new_callable=AsyncMock) as mock_synth:
+            mock_synth.return_value = '{"answer": "Draft", "citations": []}'
+            await synthesizer_node(synth_state)
+            _, kwargs = mock_synth.call_args
+            prompt = kwargs.get("user_prompt", "")
+            assert str(chunks[4].id) in prompt
+
+
+@pytest.mark.anyio
+async def test_synthesizer_strips_hallucinated_citations():
+    from quantinsight.agent.nodes.synthesizer import synthesizer_node
+    from quantinsight.schemas.models import PaperChunk, ChunkType
+
+    valid_id = uuid4()
+    fabricated_uuid = UUID("12345678-9999-4444-8888-123456789999")
+
+    valid_chunk = PaperChunk(
+        id=valid_id,
+        paper_id=uuid4(),
+        chunk_type=ChunkType.PROSE,
+        content="Valid evidence content.",
+        page_number=1,
+        order_index=0,
+    )
+
+    state = {
+        "query": "Test hallucination query",
+        "draft_answer": f"Supported claim [{valid_id}]. Fabricated claim [{fabricated_uuid}].",
+        "retrieved_chunks": [valid_chunk],
+        "retrieved_tables": [],
+        "retrieved_equations": [],
+        "verification_notes": [],
+        "needs_revision": False,
+        "revision_count": 0,
+        "trace": [],
+    }
+
+    res = await synthesizer_node(state)
+    final_ans = res["final_answer"]
+
+    assert str(fabricated_uuid) not in final_ans.answer
+    assert fabricated_uuid not in final_ans.citations
+    assert valid_id in final_ans.citations
+
+
+@pytest.mark.anyio
+async def test_llm_multi_model_fallback_tries_all_candidates():
+    from quantinsight.agent.llm import call_groq, reset_depleted_models
+
+    reset_depleted_models()
+    attempted_models = []
+
+    async def mock_completion(client, candidate, messages, response_json=True):
+        attempted_models.append(candidate)
+        raise Exception("429 Rate limit - tokens per day (TPD) limit reached")
+
+    with patch("quantinsight.agent.llm.is_mock_enabled", return_value=False):
+        with patch("quantinsight.agent.llm._call_groq_chat_completion", side_effect=mock_completion):
+            with pytest.raises(Exception, match="429"):
+                await call_groq("System", "User", api_key="fake")
+
+    # Verify that all 6 fallback candidates were tried
+    assert len(attempted_models) == 6
+    assert attempted_models[0] == "llama-3.3-70b-versatile"
+    assert "llama-3.1-8b-instant" in attempted_models
+
+
+@pytest.mark.anyio
+async def test_depleted_models_resets_on_ttl_or_explicit_reset():
+    import time
+    from quantinsight.agent.llm import _depleted_models, reset_depleted_models
+
+    reset_depleted_models()
+    _depleted_models["llama-3.3-70b-versatile"] = time.time() - 360.0  # Expired > 300s ago
+
+    from quantinsight.agent.llm import call_groq
+
+    async def mock_completion(client, candidate, messages, response_json=True):
+        return "OK"
+
+    with patch("quantinsight.agent.llm.is_mock_enabled", return_value=False):
+        with patch("quantinsight.agent.llm._call_groq_chat_completion", side_effect=mock_completion):
+            await call_groq("System", "User", api_key="fake")
+
+    # Expired model should have been purged from _depleted_models
+    assert "llama-3.3-70b-versatile" not in _depleted_models
+
+
+@pytest.mark.anyio
+async def test_agent_handles_all_llm_models_exhausted(temp_chroma, temp_db, mock_ingestion_setup):
+    markdown_content = "# Section 1\nProse content."
+    mock_ingestion_setup(markdown_content)
+    paper_id, _ = await ingest_paper(
+        arxiv_id="2303.99992",
+        title="Exhaustion Test Paper",
+        authors=["Alice"],
+        api_key="mock_key",
+        groq_api_key="mock_key",
+    )
+
+    with patch("quantinsight.agent.nodes.planner.is_mock_enabled", return_value=False):
+        with patch("quantinsight.agent.nodes.synthesizer.is_mock_enabled", return_value=False):
+            with patch("quantinsight.agent.nodes.verifier.is_mock_enabled", return_value=False):
+                with patch("quantinsight.agent.llm.is_mock_enabled", return_value=False):
+                    with patch("quantinsight.agent.llm._call_groq_chat_completion", side_effect=Exception("429 Rate limit - tokens per day (TPD)")):
+                        response = await run_agent("Test query under API outage", paper_ids=[paper_id])
+
+                        assert response.answer is not None
+                        assert "Fallback" in response.answer or "due to API issue" in response.answer
+                        assert response.self_correction_applied is False
+                        assert "API issue" in response.confidence_note or "Degraded" in response.confidence_note
+
+
+
+
 

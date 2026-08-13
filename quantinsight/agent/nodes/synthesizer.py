@@ -107,25 +107,42 @@ async def synthesizer_node(state: GraphState | dict[str, Any]) -> dict[str, Any]
                 "trace": list(trace) + [trace_step],
             }
 
+    # Compute valid evidence UUIDs
+    valid_ids = set()
+    for c in retrieved_chunks:
+        valid_ids.add(c.id)
+    for t in retrieved_tables:
+        valid_ids.add(t.chunk_id)
+    for e in retrieved_equations:
+        valid_ids.add(e.chunk_id)
+
     if is_final:
         # Final mode: Package the existing draft answer into QueryResponse
-        # Retrieve cited IDs from the draft_answer or the state
-        # Let's extract any UUIDs present in the draft_answer as citations
         import re
 
         uuid_pattern = re.compile(
             r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
         )
-        cited_uuids = [UUID(u) for u in uuid_pattern.findall(draft_answer)]
-        # Unique citations preserving order
+        found_uuids = uuid_pattern.findall(draft_answer or "")
         unique_citations = []
         seen = set()
-        for u in cited_uuids:
-            if u not in seen:
-                seen.add(u)
-                unique_citations.append(u)
+        cleaned_draft = draft_answer or ""
 
-        is_fallback = "Fallback draft answer for query" in (draft_answer or "")
+        for u_str in found_uuids:
+            try:
+                u_val = UUID(u_str)
+                if u_val in valid_ids:
+                    if u_val not in seen:
+                        seen.add(u_val)
+                        unique_citations.append(u_val)
+                else:
+                    # Strip hallucinated UUID citation from draft_answer text
+                    cleaned_draft = re.sub(rf"\s*\[\s*{re.escape(u_str)}\s*\]", "", cleaned_draft)
+                    cleaned_draft = re.sub(re.escape(u_str), "", cleaned_draft)
+            except ValueError:
+                continue
+
+        is_fallback = "Fallback draft answer for query" in cleaned_draft
         is_degraded = any("DEGRADED VERIFICATION MODE" in str(note) for note in verification_notes)
 
         if is_fallback:
@@ -143,7 +160,7 @@ async def synthesizer_node(state: GraphState | dict[str, Any]) -> dict[str, Any]
             )
 
         final_ans = QueryResponse(
-            answer=draft_answer,
+            answer=cleaned_draft,
             citations=unique_citations,
             trace=trace,  # Will be populated completely
             self_correction_applied=self_correction,

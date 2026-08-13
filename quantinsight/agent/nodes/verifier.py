@@ -89,7 +89,7 @@ async def verifier_node(state: GraphState | dict[str, Any]) -> dict[str, Any]:
 
     evidence_parts = []
     total_chars = 0
-    max_chars = 10000
+    max_chars = 12000
 
     for part in ordered_evidence_parts:
         if total_chars + len(part) <= max_chars:
