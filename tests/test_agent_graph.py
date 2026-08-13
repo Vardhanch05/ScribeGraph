@@ -423,3 +423,128 @@ async def test_llm_fallback_skips_context_and_tpd_limits():
             assert mock_completion.call_count == 2
 
 
+@pytest.mark.anyio
+async def test_synthesizer_fallback_and_degraded_confidence_notes():
+    from quantinsight.agent.nodes.synthesizer import synthesizer_node
+    from quantinsight.schemas.models import PaperChunk, ChunkType
+
+    paper_id = uuid4()
+    chunk = PaperChunk(
+        id=uuid4(),
+        paper_id=paper_id,
+        chunk_type=ChunkType.PROSE,
+        content="Sample evidence content.",
+        page_number=1,
+        order_index=0,
+    )
+
+    # Test Fallback Draft Confidence Note
+    fallback_state = {
+        "query": "What is the benchmark score?",
+        "paper_ids": [paper_id],
+        "draft_answer": f"Fallback draft answer for query: 'What is the benchmark score?' due to API issue. [{chunk.id}]",
+        "retrieved_chunks": [chunk],
+        "retrieved_tables": [],
+        "retrieved_equations": [],
+        "verification_notes": [],
+        "revision_count": 1,
+        "trace": [],
+    }
+
+    res_fallback = await synthesizer_node(fallback_state)
+    final_ans_fallback = res_fallback["final_answer"]
+    assert final_ans_fallback.self_correction_applied is False
+    assert "Generation failed — fallback response returned due to API issue." in final_ans_fallback.confidence_note
+
+    # Test Degraded Verification Mode Confidence Note
+    degraded_state = {
+        "query": "What is the benchmark score?",
+        "paper_ids": [paper_id],
+        "draft_answer": f"Valid answer string [{chunk.id}]",
+        "retrieved_chunks": [chunk],
+        "retrieved_tables": [],
+        "retrieved_equations": [],
+        "verification_notes": ["⚠️ DEGRADED VERIFICATION MODE: Verifier check bypassed due to API exception."],
+        "revision_count": 1,
+        "trace": [],
+    }
+
+    res_degraded = await synthesizer_node(degraded_state)
+    final_ans_degraded = res_degraded["final_answer"]
+    assert final_ans_degraded.self_correction_applied is False
+    assert "Degraded Verification Mode" in final_ans_degraded.confidence_note
+
+
+@pytest.mark.anyio
+async def test_retrieval_no_starvation():
+    from quantinsight.storage.chroma_store import save_embeddings, search
+    from quantinsight.storage.sqlite_store import save_paper_elements
+    from quantinsight.schemas.models import PaperChunk, TableUnit, ChunkType, CitedSummary
+
+    paper_id = uuid4()
+    chunks = []
+    tables = []
+
+    for idx in range(10):
+        c_id = uuid4()
+        c = PaperChunk(
+            id=c_id,
+            paper_id=paper_id,
+            chunk_type=ChunkType.PROSE,
+            content=f"Prose chunk content {idx} discussing benchmark models and evaluation results.",
+            page_number=1,
+            order_index=idx,
+        )
+        chunks.append(c)
+
+    for idx in range(5):
+        t_chunk_id = uuid4()
+        t_chunk = PaperChunk(
+            id=t_chunk_id,
+            paper_id=paper_id,
+            chunk_type=ChunkType.TABLE,
+            content=f"Table chunk content {idx}",
+            page_number=1,
+            order_index=10 + idx,
+        )
+        t_unit = TableUnit(
+            id=uuid4(),
+            paper_id=paper_id,
+            chunk_id=t_chunk_id,
+            caption=f"Benchmark Accuracy Table {idx}",
+            headers=["Model", "Accuracy"],
+            rows=[["Baseline", "85%"], ["Ours", "92%"]],
+            page_number=1,
+        )
+        chunks.append(t_chunk)
+        tables.append(t_unit)
+
+    summary = CitedSummary(
+        id=uuid4(),
+        paper_id=paper_id,
+        summary="Summary text.",
+        key_claims=["Claim 1"],
+        supporting_chunk_ids=[chunks[0].id],
+        model_used="gpt-4o",
+    )
+
+    save_paper_elements(chunks, tables, [], [], summary)
+    await save_embeddings(chunks, tables, [])
+
+    # Query ChromaDB with chunk_types = [PROSE, TABLE]
+    results = await search(
+        query="benchmark accuracy score table",
+        paper_ids=[paper_id],
+        chunk_types=[ChunkType.PROSE, ChunkType.TABLE],
+        limit=5,
+    )
+
+    prose_results = [r for r in results if isinstance(r, PaperChunk)]
+    table_results = [r for r in results if isinstance(r, TableUnit)]
+
+    # Assert that BOTH prose chunks and table units are retrieved (no starvation)
+    assert len(prose_results) > 0
+    assert len(table_results) > 0
+
+
+
