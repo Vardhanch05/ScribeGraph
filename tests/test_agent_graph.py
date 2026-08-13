@@ -476,7 +476,7 @@ async def test_synthesizer_fallback_and_degraded_confidence_notes():
 
 
 @pytest.mark.anyio
-async def test_retrieval_no_starvation():
+async def test_chroma_store_no_starvation():
     from quantinsight.storage.chroma_store import save_embeddings, search
     from quantinsight.storage.sqlite_store import save_paper_elements
     from quantinsight.schemas.models import PaperChunk, TableUnit, ChunkType, CitedSummary
