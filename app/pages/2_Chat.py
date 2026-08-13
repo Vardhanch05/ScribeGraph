@@ -80,6 +80,34 @@ selected_paper_labels = st.sidebar.multiselect(
 selected_ids = [UUID(paper_map[label]) for label in selected_paper_labels]
 
 
+import re
+
+def format_answer_with_citation_badges(answer: str, citations: list) -> tuple[str, dict[str, int]]:
+    """
+    Map inline UUID citations [uuid] to clean numbered badges **[1]**, **[2]**, etc.
+    """
+    if not citations:
+        return answer, {}
+
+    uuid_to_num = {}
+    for idx, cid in enumerate(citations):
+        cid_str = str(cid)
+        uuid_to_num[cid_str] = idx + 1
+
+    formatted_answer = answer
+    for cid_str, num in uuid_to_num.items():
+        formatted_answer = formatted_answer.replace(f"[{cid_str}]", f" **[{num}]**")
+
+    def replace_unmapped_uuid(match):
+        uid = match.group(1)
+        if uid in uuid_to_num:
+            return f" **[{uuid_to_num[uid]}]**"
+        return match.group(0)
+
+    formatted_answer = re.sub(r"\[([0-9a-fA-F-]{36})\]", replace_unmapped_uuid, formatted_answer)
+    return formatted_answer, uuid_to_num
+
+
 # Layout setup: 65% Chat, 35% Execution Trace
 chat_col, trace_col = st.columns([65, 35])
 
@@ -112,14 +140,18 @@ with chat_col:
                     '<div class="revision-badge">⚠️ Answer revised after verification</div>',
                     unsafe_allow_html=True,
                 )
-            st.markdown(msg["content"])
+            
+            citations = msg.get("citations", [])
+            formatted_content, _ = format_answer_with_citation_badges(msg["content"], citations)
+            st.markdown(formatted_content)
 
-            if msg.get("citations"):
+            if citations:
                 with st.expander("📚 View Supporting Chunk Citations"):
-                    for cid in msg["citations"]:
+                    for idx, cid in enumerate(citations):
+                        num = idx + 1
                         ch = get_chunk_by_id(UUID(cid) if isinstance(cid, str) else cid)
                         if ch:
-                            st.caption(f"**Chunk ID:** `{ch.id}` | **Page:** {ch.page_number} | **Type:** `{ch.chunk_type.value}`")
+                            st.caption(f"**[{num}]** **Chunk ID:** `{ch.id}` | **Page:** {ch.page_number} | **Type:** `{ch.chunk_type.value}`")
                             st.text(ch.content[:300] + "..." if len(ch.content) > 300 else ch.content)
 
     # Chat input
@@ -175,21 +207,24 @@ with chat_col:
                         unsafe_allow_html=True,
                     )
 
-                st.markdown(final_response.answer)
+                citations_list = [str(c) for c in final_response.citations]
+                formatted_answer, _ = format_answer_with_citation_badges(final_response.answer, citations_list)
+                st.markdown(formatted_answer)
 
                 if final_response.citations:
                     with st.expander("📚 View Supporting Chunk Citations"):
-                        for cid in final_response.citations:
+                        for idx, cid in enumerate(final_response.citations):
+                            num = idx + 1
                             ch = get_chunk_by_id(cid)
                             if ch:
-                                st.caption(f"**Chunk ID:** `{ch.id}` | **Page:** {ch.page_number} | **Type:** `{ch.chunk_type.value}`")
+                                st.caption(f"**[{num}]** **Chunk ID:** `{ch.id}` | **Page:** {ch.page_number} | **Type:** `{ch.chunk_type.value}`")
                                 st.text(ch.content[:300] + "..." if len(ch.content) > 300 else ch.content)
 
                 st.session_state["messages"].append(
                     {
                         "role": "assistant",
                         "content": final_response.answer,
-                        "citations": [str(c) for c in final_response.citations],
+                        "citations": citations_list,
                         "self_correction_applied": final_response.self_correction_applied,
                     }
                 )
