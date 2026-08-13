@@ -169,39 +169,56 @@ async def synthesizer_node(state: GraphState | dict[str, Any]) -> dict[str, Any]
         }
 
     # Draft Mode: Call LLM to generate or revise the draft answer
-    # Format the evidence
-    evidence_parts = []
+    # Extract cited UUIDs if revising a previous draft
+    import re
+    uuid_pattern = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+    cited_uuid_strs = set(uuid_pattern.findall(draft_answer or ""))
+
     valid_ids = set()
-    total_chars = 0
-    max_evidence_chars = 14000
+    cited_items = []
+    uncited_items = []
 
     for chunk in retrieved_chunks:
-        part = f"--- PROSE CHUNK ID: {chunk.id} (Page {chunk.page_number}) ---\n{chunk.content}"
         valid_ids.add(chunk.id)
-        if total_chars < max_evidence_chars:
-            evidence_parts.append(part)
-            total_chars += len(part)
+        part = f"--- PROSE CHUNK ID: {chunk.id} (Page {chunk.page_number}) ---\n{chunk.content}"
+        if str(chunk.id) in cited_uuid_strs:
+            cited_items.append(part)
+        else:
+            uncited_items.append(part)
 
     for table in retrieved_tables:
+        valid_ids.add(table.chunk_id)
         part = (
             f"--- TABLE ID: {table.chunk_id} (Page {table.page_number}) ---\n"
             f"Caption: {table.caption or ''}\n"
             f"Headers: {table.headers}\n"
             f"Rows: {table.rows}"
         )
-        valid_ids.add(table.chunk_id)
-        if total_chars < max_evidence_chars:
-            evidence_parts.append(part)
-            total_chars += len(part)
+        if str(table.chunk_id) in cited_uuid_strs:
+            cited_items.append(part)
+        else:
+            uncited_items.append(part)
 
     for eq in retrieved_equations:
+        valid_ids.add(eq.chunk_id)
         part = (
             f"--- EQUATION ID: {eq.chunk_id} (Page {eq.page_number}) ---\n"
             f"Latex: {eq.latex}\n"
             f"Context: {eq.surrounding_context}"
         )
-        valid_ids.add(eq.chunk_id)
-        if total_chars < max_evidence_chars:
+        if str(eq.chunk_id) in cited_uuid_strs:
+            cited_items.append(part)
+        else:
+            uncited_items.append(part)
+
+    ordered_evidence_parts = cited_items + uncited_items
+
+    evidence_parts = []
+    total_chars = 0
+    max_evidence_chars = 12000
+
+    for part in ordered_evidence_parts:
+        if total_chars + len(part) <= max_evidence_chars:
             evidence_parts.append(part)
             total_chars += len(part)
 
