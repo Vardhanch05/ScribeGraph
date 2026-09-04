@@ -13,6 +13,11 @@
 
 ## 🏗️ System Architecture
 
+![System Architecture](flow_diagram/QuantInsight_mermaid_diagram.png)
+
+<details>
+<summary>ASCII System Architecture Overview</summary>
+
 ```
                                     ┌────────────────────────┐
                                     │    User / UI / Client  │
@@ -43,6 +48,8 @@
 │  └─────────────────────────┘  └─────────────────────────┘  └────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+</details>
 
 ---
 
