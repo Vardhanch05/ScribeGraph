@@ -11,10 +11,6 @@
 
 ---
 
-## 🏗️ System Architecture
-
-![System Architecture](flow_diagram/QuantInsight_mermaid_diagram.png)
-
 ## ✨ Key Features
 
 1. **Structured Document Ingestion (LlamaParse)**: Converts PDF/arXiv papers into semantically typed chunks (Prose, Tables, Equations) while retaining original reading order and page indexes.
