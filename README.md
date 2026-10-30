@@ -15,43 +15,6 @@
 
 ![System Architecture](flow_diagram/QuantInsight_mermaid_diagram.png)
 
-<details>
-
-```
-                                    ┌────────────────────────┐
-                                    │    User / UI / Client  │
-                                    └───────────┬────────────┘
-                                                │
-                                                ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                FastAPI & FastMCP Servers                               │
-└───────────────────────────────────────┬────────────────────────────────────────────────┘
-                                        │
-                                        ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                              LangGraph Self-Correcting Loop                            │
-│                                                                                        │
-│   ┌───────────┐         ┌───────────┐         ┌─────────────┐         ┌─────────────┐  │
-│   │  Planner  │ ──────► │ Retriever │ ──────► │ Synthesizer │ ──────► │  Verifier   │  │
-│   └───────────┘         └───────────┘         └──────┬──────┘         └──────┬──────┘  │
-│                                                      ▲                       │         │
-│                                                      └────── Revision ───────┘         │
-└───────────────────────────────────────┬────────────────────────────────────────────────┘
-                                        │
-                                        ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                            Type-Aware Knowledge Storage                                │
-│  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌────────────────────────┐  │
-│  │   ChromaDB (Vectors)    │  │   SQLite (Metadata DB)  │  │ Checkpoint Saver (AIO) │  │
-│  │  prose / table / eq     │  │ papers, chunks, traces  │  │   agent state memory   │  │
-│  └─────────────────────────┘  └─────────────────────────┘  └────────────────────────┘  │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-</details>
-
----
-
 ## ✨ Key Features
 
 1. **Structured Document Ingestion (LlamaParse)**: Converts PDF/arXiv papers into semantically typed chunks (Prose, Tables, Equations) while retaining original reading order and page indexes.
